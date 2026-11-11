@@ -222,25 +222,36 @@ function renderCustomers() {
       <td>${conns.map((k) => k.type[0] + k.type.slice(1).toLowerCase()).join(", ") || ""}</td>
       <td>${conns.map((k) => esc(k.address)).join("; ")}</td></tr>`;
   }).join("");
-  $("view").innerHTML = `<h2>Customers</h2>
-    <p class="lead">Registered customers and their water connections.</p>
+  $("view").innerHTML = `<div class="page-head"><div><h2>Customers</h2>
+    <p class="lead">Registered customers and their water connections.</p></div>
+    <button id="new-conn-btn" class="btn primary" type="button">New connection</button></div>
     <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Meter</th><th>Type</th><th>Address</th></tr></thead>
-      <tbody id="customer-rows">${rows || emptyRow(6, "No customers yet.")}</tbody></table></div>
-    <h3>Add connection</h3>
-    <div class="form-box">
-      <label for="a-cust">Customer</label><select id="a-cust"><option value="">Select customer</option>${S.customers.map((c) => `<option value="${c.id}">${esc(c.full_name)} (${esc(c.username)})</option>`).join("")}</select>
-      <div class="row2"><div><label for="a-meter">Meter number</label><input id="a-meter" placeholder="e.g. MTR-1007"></div>
-      <div><label for="a-type">Type</label><select id="a-type"><option>DOMESTIC</option><option>COMMERCIAL</option></select></div></div>
-      <label for="a-addr">Address</label><input id="a-addr" placeholder="Service address">
-      <button id="conn-btn" class="btn primary" style="margin-top:16px" type="button">Add connection</button></div>`;
-  $("conn-btn").onclick = async () => {
-    try {
-      await api("/connections", "POST", { customer_id: +$("a-cust").value, meter_no: $("a-meter").value.trim(), type: $("a-type").value, address: $("a-addr").value.trim() });
-      toast("Connection added");
-      go("customers");
-    } catch (err) { toast(err.message, "err"); }
-  };
+      <tbody id="customer-rows">${rows || emptyRow(6, "No customers yet.")}</tbody></table></div>`;
+  $("new-conn-btn").onclick = openConnDialog;
 }
+
+/* "New connection" popup */
+function openConnDialog() {
+  $("conn-body").innerHTML = `
+    <label for="a-cust">Customer</label><select id="a-cust"><option value="">Select customer</option>${S.customers.map((c) => `<option value="${c.id}">${esc(c.full_name)} (${esc(c.username)})</option>`).join("")}</select>
+    <div class="row2"><div><label for="a-meter">Meter number</label><input id="a-meter" placeholder="e.g. MTR-1007"></div>
+    <div><label for="a-type">Type</label><select id="a-type"><option>DOMESTIC</option><option>COMMERCIAL</option></select></div></div>
+    <label for="a-addr">Address</label><input id="a-addr" placeholder="Service address">
+    <div id="conn-msg" class="form-msg" role="alert" style="margin-top:10px"></div>`;
+  $("conn-modal").classList.remove("hidden");
+  $("a-cust").focus();
+}
+function closeConnDialog() { $("conn-modal").classList.add("hidden"); }
+$("conn-cancel").onclick = closeConnDialog;
+$("conn-modal").onclick = (e) => { if (e.target.id === "conn-modal") closeConnDialog(); };
+$("conn-btn").onclick = async () => {
+  try {
+    await api("/connections", "POST", { customer_id: +$("a-cust").value, meter_no: $("a-meter").value.trim(), type: $("a-type").value, address: $("a-addr").value.trim() });
+    closeConnDialog();
+    toast("Connection added");
+    go("customers");
+  } catch (err) { setMsg("conn-msg", err.message, false); }
+};
 
 /* ---------------- admin: readings ---------------- */
 function renderReadings() {
