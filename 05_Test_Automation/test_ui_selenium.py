@@ -140,7 +140,7 @@ def test_TC_UI04_admin_login_shows_admin_menu(driver):
     assert driver.find_element(By.ID, "who").text == "System Administrator"
     assert driver.find_element(By.ID, "role-label").text.lower() == "admin"
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert [m.title() for m in menu] == ["Dashboard", "Customers", "Readings", "Bills", "Payments", "Complaints"]
+    assert [m.title() for m in menu] == ["Dashboard", "Customers", "Readings", "Bills", "Payments", "Feedback"]
     shot(driver, "UI04_admin_customers")
 
 
@@ -228,7 +228,7 @@ def test_TC_UI07_customer_does_not_see_admin_menu(driver, base_url):
     assert driver.find_elements(By.ID, "nav-customers") == []
     assert driver.find_elements(By.ID, "nav-readings") == []
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert [m.capitalize() for m in menu] == ["Dashboard", "My bills", "Payments", "Complaints", "Estimate"]
+    assert [m.capitalize() for m in menu] == ["Dashboard", "My bills", "Payments", "Feedback", "Estimate"]
     shot(driver, "UI07_customer_menu")
 
 
@@ -488,9 +488,9 @@ def test_TC_UI20_save_reading_and_generate_bill_in_one_step(driver, base_url):
 def test_TC_UI21_login_page_shows_the_hydrocore_brand_and_wave(driver):
     assert driver.title == "HydroCore"
     assert driver.find_element(By.CSS_SELECTOR, ".auth-name").text == "HydroCore"
-    assert driver.find_element(By.CSS_SELECTOR, ".auth-wave").is_displayed()
-    assert len(driver.find_elements(By.CSS_SELECTOR, ".auth-wave path")) == 1        # a single wave, no paler second layer
+    assert driver.find_element(By.CSS_SELECTOR, ".auth-aside").is_displayed()          # brand panel beside the form
     assert driver.find_elements(By.CSS_SELECTOR, ".auth-logo svg use")                # the HydroCore mark, not a plain drop
+    assert driver.find_element(By.CSS_SELECTOR, "label[for=l-user]").text == "Username"
     shot(driver, "UI21_login_wave")
     login_as_admin(driver)
     assert driver.find_element(By.CSS_SELECTOR, ".brand span").text == "HydroCore"

@@ -98,8 +98,8 @@ $("logout-btn").onclick = async () => {
 /* ---------------- navigation (only what the system needs) ---------------- */
 function buildNav() {
   const items = S.role === "ADMIN"
-    ? [["dashboard", "Dashboard"], ["customers", "Customers"], ["readings", "Readings"], ["bills", "Bills"], ["payments", "Payments"], ["complaints", "Complaints"]]
-    : [["dashboard", "Dashboard"], ["bills", "My bills"], ["payments", "Payments"], ["complaints", "Complaints"], ["estimator", "Estimate"]];
+    ? [["dashboard", "Dashboard"], ["customers", "Customers"], ["readings", "Readings"], ["bills", "Bills"], ["payments", "Payments"], ["complaints", "Feedback"]]
+    : [["dashboard", "Dashboard"], ["bills", "My bills"], ["payments", "Payments"], ["complaints", "Feedback"], ["estimator", "Estimate"]];
   $("nav").innerHTML = items.map(([id, label]) => `<button class="nav-item" id="nav-${id}" data-page="${id}" type="button">${label}</button>`).join("");
   $("nav").querySelectorAll(".nav-item").forEach((b) => (b.onclick = () => go(b.dataset.page)));
 }
@@ -201,7 +201,7 @@ async function adminDashboard() {
   const items = [
     [ready, plural(ready, "meter is ready to bill", "meters are ready to bill"), goLink("readings", "Open readings")],
     [overdue, plural(overdue, "bill is overdue", "bills are overdue"), goLink("bills", "View", "OVERDUE")],
-    [openComplaints, plural(openComplaints, "complaint is open", "complaints are open"), goLink("complaints", "View")],
+    [openComplaints, plural(openComplaints, "feedback item is open", "feedback items are open"), goLink("complaints", "View")],
     [alerts, plural(alerts, "high-usage alert", "high-usage alerts"), goLink("bills", "View", "ALL")],
   ].filter(([n]) => n > 0);
   const recent = payments.slice().sort((a, b) => b.paid_on.localeCompare(a.paid_on) || b.id - a.id).slice(0, 5);
@@ -247,7 +247,7 @@ async function customerDashboard() {
 
   const usage = S.bills.slice(-6);
   $("view").innerHTML = `${hero()}
-    ${alert ? `<div class="notice"><strong>High water usage detected.</strong> ${esc(alert.message)} on meter ${esc(connLabel(alert.connection_id))}. If you have not used that much, check for a leak and ${goLink("complaints", "report it")}.</div>` : ""}
+    ${alert ? `<div class="notice"><strong>High water usage detected.</strong> ${esc(alert.message)} on meter ${esc(connLabel(alert.connection_id))}. If you have not used that much, check for a leak and ${goLink("complaints", "report it as feedback")}.</div>` : ""}
     <div class="dash-grid">
       <div class="panel"><h3>Amount due</h3>
         <div class="big" id="dash-due">${money(due)}</div>
@@ -265,7 +265,7 @@ async function customerDashboard() {
     <div class="panel chart-panel"><h3>Your water usage (kL), last ${usage.length || 6} bills</h3>
       <div class="chart" id="dash-chart">${usage.length ? barChart(usage.map((b) => new Date(b.bill_date + "T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" })),
         [{ name: "Usage (kL)", color: "#1558b0", values: usage.map((b) => b.units) }], { compact: false, showValues: true }) : '<p class="muted">Your usage will appear here after your first bill.</p>'}</div></div>
-    ${openComplaints ? `<p class="muted" style="margin-top:4px">You have ${openComplaints} open ${plural(openComplaints, "complaint", "complaints")}. ${goLink("complaints", "View")}</p>` : ""}`;
+    ${openComplaints ? `<p class="muted" style="margin-top:4px">You have ${openComplaints} open ${plural(openComplaints, "feedback item", "feedback items")}. ${goLink("complaints", "View")}</p>` : ""}`;
   if (oldest) $("dash-pay").onclick = () => openPay(oldest.id);
   bindGoLinks();
 }
@@ -435,14 +435,14 @@ async function renderCustomerDetail() {
         <td><button class="btn small receipt-btn" data-id="${p.id}" type="button">Receipt</button></td></tr>`).join("") || emptyRow(7, "No payments yet.")}</tbody></table></div>`,
     complaints: `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Date</th><th>Type</th><th>Description</th><th>Status</th><th>Resolution</th></tr></thead><tbody>${
       comps.map((c) => `<tr><td>#${c.id}</td><td style="white-space:nowrap">${c.created_on}</td><td>${CATEGORY[c.category]}</td><td class="cell-text">${esc(c.description)}</td><td>${cstatus(c.status)}</td>
-        <td class="cell-text">${c.resolution ? esc(c.resolution) : '<span class="muted">-</span>'}</td></tr>`).join("") || emptyRow(6, "No complaints.")}</tbody></table></div>`,
+        <td class="cell-text">${c.resolution ? esc(c.resolution) : '<span class="muted">-</span>'}</td></tr>`).join("") || emptyRow(6, "No feedback.")}</tbody></table></div>`,
     readings: `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Meter</th><th class="num">Reading (kL)</th><th class="num">Used since previous</th></tr></thead><tbody>${
       reads.map((r, i) => {
         const prev = reads.slice(0, i).reverse().find((x) => x.connection_id === r.connection_id);
         return `<tr><td>${r.read_on}</td><td>${esc(r.meter_no)}</td><td class="num">${r.reading}</td><td class="num">${prev ? round2(r.reading - prev.reading) + " kL" : '<span class="muted">first reading</span>'}</td></tr>`;
       }).reverse().join("") || emptyRow(4, "No readings yet.")}</tbody></table></div>`,
   };
-  const tabs = [["bills", "Bills", bills.length], ["payments", "Payments", pays.length], ["complaints", "Complaints", comps.length], ["readings", "Meter readings", reads.length]];
+  const tabs = [["bills", "Bills", bills.length], ["payments", "Payments", pays.length], ["complaints", "Feedback", comps.length], ["readings", "Meter readings", reads.length]];
 
   $("view").innerHTML = `<a href="#" id="back-customers" class="back-link">&lsaquo; Customers</a>
     <div class="id-head"><div class="avatar-sq">${esc(initials(cust.full_name))}</div>
@@ -450,7 +450,7 @@ async function renderCustomerDetail() {
     <div class="summary"><div><span class="k">Amount due</span><span class="v">${money(outstanding)}</span></div>
       <div><span class="k">Total paid</span><span class="v">${money(paidTotal)}</span></div>
       <div><span class="k">Overdue bills</span><span class="v">${bills.filter((b) => b.status === "OVERDUE").length}</span></div>
-      <div><span class="k">Open complaints</span><span class="v">${comps.filter((c) => c.status !== "RESOLVED").length}</span></div></div>
+      <div><span class="k">Open feedback</span><span class="v">${comps.filter((c) => c.status !== "RESOLVED").length}</span></div></div>
     <div class="info-card"><h3>Connections</h3>${conns.length ? `<div class="table-wrap" style="border:0"><table><thead><tr><th>Meter</th><th>Type</th><th>Address</th></tr></thead><tbody>${
       conns.map((k) => `<tr><td>${esc(k.meter_no)}</td><td>${k.type[0] + k.type.slice(1).toLowerCase()}</td><td>${esc(k.address)}</td></tr>`).join("")}</tbody></table></div>` : '<span class="muted">No connection yet.</span>'}</div>
     <div class="tabs" id="detail-tabs">${tabs.map(([k, label, n]) => `<button class="tab-btn ${S.detailTab === k ? "active" : ""}" data-tab="${k}" id="dtab-${k}" type="button">${label}<span class="count">${n}</span></button>`).join("")}</div>
@@ -613,23 +613,38 @@ const NEXT = { OPEN: ["IN_PROGRESS"], IN_PROGRESS: ["RESOLVED"], RESOLVED: [] };
 const cstatus = (s) => `<span class="status s-${s}">${CSTATUS[s]}</span>`;
 let COMPLAINTS = [];
 
+const ago = (iso) => {
+  const d = Math.round((new Date(new Date().toDateString()) - new Date(iso + "T00:00:00")) / 86400000);
+  return d <= 0 ? "Today" : d === 1 ? "Yesterday" : d + " days ago";
+};
+const longDate = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
 async function renderComplaints() {
   const admin = S.role === "ADMIN";
   COMPLAINTS = await api("/complaints");
   const open = COMPLAINTS.filter((c) => c.status !== "RESOLVED").length;
-  const rows = COMPLAINTS.map((c) => `<tr>
-      <td>#${c.id}</td><td style="white-space:nowrap">${c.created_on}</td>${admin ? `<td>${custLink(c.customer_id, c.customer_name)}</td>` : ""}
-      <td style="white-space:nowrap">${CATEGORY[c.category]}</td><td style="white-space:nowrap">${c.meter_no ? esc(c.meter_no) : '<span class="muted">-</span>'}</td>
-      <td class="cell-text">${esc(c.description)}</td><td class="cst">${cstatus(c.status)}</td>
-      <td class="cell-text">${c.resolution ? esc(c.resolution) : '<span class="muted">-</span>'}</td>
-      ${admin ? `<td>${NEXT[c.status].length ? `<button class="btn small cu-btn" data-id="${c.id}" type="button">Update</button>` : ""}</td>` : ""}</tr>`).join("");
-  $("view").innerHTML = `<div class="page-head"><h2>Complaints</h2>
-      ${admin ? "" : '<button id="new-complaint-btn" class="btn primary" type="button">New complaint</button>'}</div>
+  const list = [...COMPLAINTS].sort((a, b) => (b.created_on.localeCompare(a.created_on)) || (b.id - a.id));
+  let lastDay = "", feed = "";
+  list.forEach((c) => {
+    if (c.created_on !== lastDay) { feed += `<div class="feed-day">${longDate(c.created_on)}</div>`; lastDay = c.created_on; }
+    const who = admin ? custLink(c.customer_id, c.customer_name) : "You";
+    feed += `<div class="feed-item">
+      <span class="avatar">${esc(initials(admin ? c.customer_name : S.name))}</span>
+      <div class="feed-main">
+        <div class="feed-line"><strong>${who}</strong> reported <strong>${CATEGORY[c.category].toLowerCase()}</strong>${c.meter_no ? ` on meter ${esc(c.meter_no)}` : ""} <span class="feed-ref">#${c.id}</span></div>
+        <div class="feed-text">${esc(c.description)}</div>
+        ${c.resolution ? `<div class="feed-reply"><span class="muted">Response:</span> ${esc(c.resolution)}</div>` : ""}
+        <div class="feed-meta">${ago(c.created_on)} &middot; <span class="cst">${cstatus(c.status)}</span></div>
+      </div>
+      ${admin && NEXT[c.status].length ? `<button class="btn small cu-btn" data-id="${c.id}" type="button">Update</button>` : ""}
+    </div>`;
+  });
+  $("view").innerHTML = `<div class="page-head"><h2>Feedback</h2>
+      ${admin ? "" : '<button id="new-complaint-btn" class="btn primary" type="button">New feedback</button>'}</div>
     <div class="summary" style="margin-top:14px"><div><span class="k">Total</span><span class="v">${COMPLAINTS.length}</span></div>
       <div><span class="k">Open or in progress</span><span class="v">${open}</span></div>
       <div><span class="k">Resolved</span><span class="v">${COMPLAINTS.length - open}</span></div></div>
-    <div class="table-wrap"><table><thead><tr><th>ID</th><th>Date</th>${admin ? "<th>Customer</th>" : ""}<th>Type</th><th>Meter</th><th>Description</th><th>Status</th><th>Resolution</th>${admin ? "<th></th>" : ""}</tr></thead>
-      <tbody id="complaint-rows">${rows || emptyRow(admin ? 9 : 8, "No complaints.")}</tbody></table></div>`;
+    <div id="complaint-rows" class="feed">${feed || '<p class="muted" style="padding:18px 0">No feedback yet.</p>'}</div>`;
   if (admin) document.querySelectorAll(".cu-btn").forEach((b) => (b.onclick = () => openUpdateComplaint(+b.dataset.id)));
   else $("new-complaint-btn").onclick = openNewComplaint;
   bindCustLinks();
@@ -652,7 +667,7 @@ $("cp-save").onclick = async () => {
     if ($("cp-conn").value) body.connection_id = +$("cp-conn").value;
     await api("/complaints", "POST", body);
     $("cp-modal").classList.add("hidden");
-    toast("Complaint submitted");
+    toast("Feedback submitted");
     go("complaints");
   } catch (err) { setMsg("cp-msg", err.message, false); }
 };
@@ -668,7 +683,7 @@ function openUpdateComplaint(id) {
       const allowed = NEXT[c.status].includes(s);
       return `<option value="${s}" ${allowed ? "" : "disabled"} ${s === NEXT[c.status][0] ? "selected" : ""}>${CSTATUS[s]}${s === c.status ? " (current)" : ""}</option>`;
     }).join("")}</select>
-    <p class="muted hint">A complaint moves one step at a time: Open, then In progress, then Resolved.</p>
+    <p class="muted hint">Feedback moves one step at a time: Open, then In progress, then Resolved.</p>
     <label for="cu-res">Resolution note (required when resolving)</label><textarea id="cu-res" maxlength="500" placeholder="What was done?"></textarea>
     <div id="cu-msg" class="form-msg" role="alert"></div>`;
   $("cu-modal").classList.remove("hidden");
@@ -679,7 +694,7 @@ $("cu-save").onclick = async () => {
   try {
     await api("/complaints/" + updatingId, "PATCH", { status: $("cu-status").value, resolution: $("cu-res").value.trim() || undefined });
     $("cu-modal").classList.add("hidden");
-    toast("Complaint updated");
+    toast("Feedback updated");
     go("complaints");
   } catch (err) { setMsg("cu-msg", err.message, false); }
 };

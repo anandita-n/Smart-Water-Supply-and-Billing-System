@@ -25,40 +25,52 @@
 
 <!-- ============ SIGN IN / CREATE ACCOUNT ============ -->
 <div id="auth-screen" class="auth-screen">
-  <svg class="auth-wave" viewBox="0 0 1440 340" preserveAspectRatio="none" aria-hidden="true">
-    <path fill="#c4def5" d="M0,0H1440V200C1230,280 1030,120 780,172C540,222 300,300 0,205Z"/>
-  </svg>
+  <aside class="auth-aside" aria-hidden="true">
+    <div class="aside-brand"><span class="aside-tile"><svg viewBox="0 0 64 64" width="26" height="26"><use href="#hc-logo"/></svg></span><span>HydroCore</span></div>
+    <div class="aside-copy">
+      <h2>Water supply and billing, in one place.</h2>
+      <ul>
+        <li>View your bills and pay securely online</li>
+        <li>Track monthly water usage and leak alerts</li>
+        <li>Raise feedback and follow it to resolution</li>
+      </ul>
+    </div>
+    <div class="aside-foot">Municipal water utility portal</div>
+  </aside>
+  <main class="auth-main">
   <div class="auth-card">
     <div class="auth-logo">
-      <svg class="logo-mark" viewBox="0 0 64 64" width="58" height="58" aria-hidden="true"><use href="#hc-logo"/></svg>
+      <svg class="logo-mark" viewBox="0 0 64 64" width="34" height="34" aria-hidden="true"><use href="#hc-logo"/></svg>
       <div class="auth-name wordmark">Hydro<b>Core</b></div>
     </div>
 
     <form id="login-form" autocomplete="on" novalidate>
       <h1>Sign in</h1>
-      <p class="sub">to continue to HydroCore</p>
-      <input id="l-user" aria-label="Username" autocomplete="username" placeholder="Username">
-      <input id="l-pass" type="password" aria-label="Password" autocomplete="current-password" placeholder="Password">
+      <p class="sub">Enter your account details to continue.</p>
+      <label for="l-user">Username</label>
+      <input id="l-user" autocomplete="username">
+      <label for="l-pass">Password</label>
+      <input id="l-pass" type="password" autocomplete="current-password">
       <div id="auth-msg" class="form-msg" role="alert"></div>
-      <div class="auth-actions">
-        <button id="tab-register" class="link" type="button">Create account</button>
-        <button id="login-btn" class="btn primary" type="submit">Sign in</button>
-      </div>
+      <button id="login-btn" class="btn primary wide" type="submit">Sign in</button>
+      <p class="switch">New customer? <button id="tab-register" class="link" type="button">Create an account</button></p>
     </form>
 
     <form id="register-form" class="hidden" novalidate>
       <h1>Create account</h1>
-      <p class="sub">for HydroCore customers</p>
-      <input id="r-name" aria-label="Full name" placeholder="Full name">
-      <input id="r-user" aria-label="Username" placeholder="Username (3-30 letters, numbers or _)">
-      <input id="r-pass" type="password" aria-label="Password" placeholder="Password (at least 6 characters)">
+      <p class="sub">Register as a HydroCore customer.</p>
+      <label for="r-name">Full name</label>
+      <input id="r-name">
+      <label for="r-user">Username</label>
+      <input id="r-user" placeholder="3 to 30 letters, numbers or _">
+      <label for="r-pass">Password</label>
+      <input id="r-pass" type="password" placeholder="At least 6 characters">
       <div id="reg-msg" class="form-msg" role="alert"></div>
-      <div class="auth-actions">
-        <button id="tab-login" class="link" type="button">Sign in instead</button>
-        <button id="register-btn" class="btn primary" type="submit">Create</button>
-      </div>
+      <button id="register-btn" class="btn primary wide" type="submit">Create account</button>
+      <p class="switch">Already registered? <button id="tab-login" class="link" type="button">Sign in</button></p>
     </form>
   </div>
+  </main>
 </div>
 
 <!-- ============ APPLICATION ============ -->
@@ -143,7 +155,7 @@
 <!-- ============ NEW COMPLAINT DIALOG (customer) ============ -->
 <div id="cp-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cp-title">
   <div class="dialog wide">
-    <h3 id="cp-title">New complaint</h3>
+    <h3 id="cp-title">New feedback</h3>
     <div id="cp-body"></div>
     <div class="dialog-actions">
       <button id="cp-cancel" class="link" type="button">Cancel</button>
@@ -155,7 +167,7 @@
 <!-- ============ UPDATE COMPLAINT DIALOG (admin) ============ -->
 <div id="cu-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cu-title">
   <div class="dialog wide">
-    <h3 id="cu-title">Update complaint</h3>
+    <h3 id="cu-title">Update feedback</h3>
     <div id="cu-body"></div>
     <div class="dialog-actions">
       <button id="cu-cancel" class="link" type="button">Cancel</button>

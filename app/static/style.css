@@ -218,3 +218,39 @@ h1, h2, .page-head h2, .hero h1, .hero h2 { font-family: "Lora", Georgia, "Times
 .topbar-inner { gap: 16px; }
 .toolbar { gap: 28px; }
 .toolbar input[type=search] { margin-left: 8px; min-width: 300px; }
+
+/* ---------- sign-in: split layout ---------- */
+.auth-screen { display: grid; grid-template-columns: 5fr 6fr; padding: 0; align-items: stretch; justify-content: normal; overflow: visible; }
+.auth-aside { background: #0f3d7a; color: #fff; padding: 40px 56px; display: flex; flex-direction: column; justify-content: space-between; }
+.aside-brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; letter-spacing: .2px; }
+.aside-tile { width: 40px; height: 40px; border-radius: 10px; background: #fff; display: grid; place-items: center; }
+.aside-copy h2 { font-family: "Lora", Georgia, serif; font-weight: 500; font-size: 34px; line-height: 1.25; margin: 0 0 24px; color: #fff; }
+.aside-copy ul { list-style: none; margin: 0; padding: 0; }
+.aside-copy li { padding: 10px 0 10px 22px; position: relative; color: #c9dcf2; border-top: 1px solid rgba(255,255,255,.14); }
+.aside-copy li::before { content: ""; position: absolute; left: 0; top: 19px; width: 8px; height: 8px; border-radius: 50%; background: #6fb1ee; }
+.aside-foot { font-size: 12px; color: #8fb3de; }
+.auth-main { display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: #fff; }
+.auth-card { box-shadow: none; border-radius: 0; padding: 0; max-width: 380px; }
+.auth-logo { display: flex; align-items: center; gap: 10px; text-align: left; margin-bottom: 30px; }
+.auth-logo .auth-name { font-size: 20px; margin: 0; }
+.auth-card h1 { text-align: left; font-family: "Lora", Georgia, serif; font-size: 28px; font-weight: 600; margin: 0 0 6px; }
+.auth-card .sub { text-align: left; margin: 0 0 24px; font-size: 14px; }
+.auth-card label { display: block; font-weight: 600; font-size: 13px; margin: 0 0 6px; }
+.auth-card input { margin-bottom: 18px; padding: 10px 12px; }
+.btn.wide { width: 100%; padding: 11px 14px; margin-top: 6px; }
+.auth-card .switch { margin: 22px 0 0; color: var(--muted); text-align: left; }
+.auth-card .switch .link { padding: 0; }
+@media (max-width: 800px) { .auth-screen { grid-template-columns: 1fr; } .auth-aside { display: none; } }
+
+/* ---------- feedback feed ---------- */
+.feed-day { font-size: 11.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); padding: 22px 0 8px; border-bottom: 1px solid var(--line); }
+.feed-day:first-child { padding-top: 6px; }
+.feed-item { display: flex; gap: 14px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid #eef0f2; }
+.avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; background: #1558b0; color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 600; }
+.feed-main { flex: 1; min-width: 0; }
+.feed-line { font-size: 14px; }
+.feed-ref { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.feed-text { margin-top: 4px; color: #3b4148; }
+.feed-reply { margin-top: 6px; padding-left: 10px; border-left: 3px solid #cfe0f3; color: #3b4148; }
+.feed-meta { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.feed-meta .status { font-size: 12px; }
