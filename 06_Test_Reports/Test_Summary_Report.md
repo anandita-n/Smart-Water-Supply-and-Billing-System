@@ -15,30 +15,31 @@
 | Run 5 | Minimal sign-in page, top navigation, seed data (TC-A61, TC-A62), updated UI tests | 99 | 99 | 0 |
 | Run 6 | New connection popup, light-blue top bar, UI test updated | 99 | 99 | 0 |
 | Run 7 | New modules (payment receipts, login lock-out, complaints, profile and password) tested before any fix; UI tests not run | 149 | 148 | 1 |
-| Run 8 | Final: DEF-005 fixed, UI tests for the new screens added | 160 | 160 | 0 |
+| Run 8 | DEF-005 fixed, UI tests for the new screens added | 160 | 160 | 0 |
+| Run 9 | Final: customer history page, type filter, readings table and popup, three-dots profile, captions removed; reading-list API tests and UI tests TC-UI12 to TC-UI16 | 169 | 169 | 0 |
 
-Raw results: `run1_baseline.xml` to `run8_final.xml` (JUnit XML) and the `*_summary.txt` files.
+Raw results: `run1_baseline.xml` to `run9_final.xml` (JUnit XML) and the `*_summary.txt` files.
 Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
-### Final test inventory (run 8)
+### Final test inventory (run 9)
 | Level | Technique(s) | Test cases |
 |---|---|---|
 | Unit (`test_billing_unit.py`, `test_complaints.py`) | BVA, equivalence partitioning, decision table, state transition | 36 |
-| API (`test_api.py`, `test_payments.py`, `test_account_security.py`, `test_complaints.py`, `test_seed.py`) | Equivalence partitioning, BVA, RBAC, decision table, state transition, error guessing | 113 |
-| UI (`test_ui_selenium.py`) | Scenario-based, end to end | 11 |
-| **Total** | | **160** |
+| API (`test_api.py`, `test_payments.py`, `test_account_security.py`, `test_complaints.py`, `test_seed.py`) | Equivalence partitioning, BVA, RBAC, decision table, state transition, error guessing | 117 |
+| UI (`test_ui_selenium.py`) | Scenario-based, end to end | 16 |
+| **Total** | | **169** |
 
 Parameterised tests are counted per parameter set, because each set has its own test case ID.
 
-## 2. Code coverage (pytest-cov, run 8)
+## 2. Code coverage (pytest-cov, run 9)
 | File | Statements | Missed | Coverage |
 |---|---|---|---|
 | app/billing.py | 48 | 0 | 100% |
 | app/complaints.py | 9 | 0 | 100% |
 | app/db.py | 21 | 3 | 86% |
-| app/main.py | 318 | 2 | 99% |
+| app/main.py | 328 | 2 | 99% |
 | app/seed.py | 63 | 4 | 94% |
-| **Total** | 459 | 9 | **98%** (exit criterion: at least 90%) |
+| **Total** | 469 | 9 | **98%** (exit criterion: at least 90%) |
 
 The uncovered lines in `db.py` are the migration steps for databases created before a feature existed; the tests always start from an empty database.
 
