@@ -35,7 +35,7 @@ label { display: block; font-weight: 600; margin: 14px 0 5px; font-size: 13px; }
 .auth-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; }
 
 /* ---------- top bar ---------- */
-.topbar { border-bottom: 1px solid #cfe0f3; background: #eaf3fc; position: sticky; top: 0; z-index: 5; }
+.topbar { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 5; }
 .topbar-inner { max-width: 1040px; margin: 0 auto; padding: 0 20px; height: 54px; display: flex; align-items: center; gap: 28px; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; }
 #nav { display: flex; gap: 4px; flex: 1; height: 100%; }
@@ -117,7 +117,7 @@ textarea { resize: vertical; min-height: 84px; }
   #receipt-modal .dialog-actions { display: none; }
 }
 /* ---------- links, customer history, profile ---------- */
-.cust-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+.cust-link { color: var(--ink); text-decoration: none; font-weight: 600; }
 .cust-link:hover { text-decoration: underline; }
 .back-link { display: inline-block; margin-bottom: 14px; color: var(--accent); text-decoration: none; font-weight: 600; }
 .back-link:hover { text-decoration: underline; }
@@ -189,11 +189,11 @@ table.plain tr:last-child td { border-bottom: 0; }
 /* ---------- figures without boxes (statement style, as on utility account pages) ---------- */
 .summary { display: flex; flex-wrap: wrap; gap: 8px 48px; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; margin: 16px 0 20px; padding: 0 0 16px; }
 .summary > div { flex: none; min-width: 0; padding: 0; border: 0; }
-.summary .k { font-size: 13px; }
-.summary .v { font-size: 22px; font-weight: 600; }
+.summary .k { font-size: 12px; }
+.summary .v { font-size: 17px; font-weight: 600; }
 .statement { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px 72px; padding: 4px 2px 22px; border-bottom: 1px solid var(--line); margin-bottom: 22px; }
 .balance .k { display: block; color: var(--muted); font-size: 13px; }
-.balance .figure { display: block; font-size: 40px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.balance .figure { display: block; font-size: 28px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .balance .note { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
 .balance .note .link { padding: 0; font-size: 13px; }
 .facts { margin: 0; min-width: 300px; }
