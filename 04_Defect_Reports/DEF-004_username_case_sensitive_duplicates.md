@@ -6,7 +6,7 @@
 | Found by | TC-A55 (API test), run 3 |
 | Severity | Medium |
 | Priority | Medium |
-| Status | **Open** |
+| Status | **Closed**: fixed and retested (run 4: TC-A55 and TC-A60 pass) |
 | Reported by | S Anandita Narayan |
 
 ## Description
@@ -28,3 +28,10 @@ HTTP 201 Created; two accounts now exist.
 
 ## Root cause / proposed fix
 Usernames are stored and compared exactly as typed. Normalise them to lower case on registration and login.
+
+## Fix applied
+`app/main.py`: `register` stores `username.lower()` and `login` looks up `username.lower()`, so `Alice` and
+`alice` are the same account and either spelling can be used to sign in.
+
+## Retest
+TC-A55 now returns 409. The new TC-A60 confirms that signing in as `ALICE` still works for the account `alice`.
