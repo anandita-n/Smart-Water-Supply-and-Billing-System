@@ -11,11 +11,15 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import billing
+from . import complaints as cmp
 from .db import get_conn, init_db
 
 app = FastAPI(title="Smart Water Supply and Billing System", version="1.0.0")
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 TOKEN_TTL_HOURS = 8
+MAX_FAILED_LOGINS = 5
+LOCK_MINUTES = 15
+PAYMENT_METHODS = "^(UPI|CARD|NETBANKING|CASH)$"
 
 
 # ---------- helpers ----------
@@ -93,6 +97,27 @@ class GenerateIn(BaseModel):
 class PayIn(BaseModel):
     amount: float = Field(allow_inf_nan=False)
     paid_on: Optional[date] = None
+    method: str = Field("UPI", pattern=PAYMENT_METHODS)
+
+
+class ProfileIn(BaseModel):
+    full_name: str = Field(min_length=1, max_length=80)
+
+
+class PasswordIn(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=6, max_length=64)
+
+
+class ComplaintIn(BaseModel):
+    category: str = Field(pattern="^(LEAK|BILLING|NO_SUPPLY|OTHER)$")
+    description: str = Field(min_length=10, max_length=500)
+    connection_id: Optional[int] = None
+
+
+class ComplaintUpdate(BaseModel):
+    status: str = Field(pattern="^(IN_PROGRESS|RESOLVED)$")
+    resolution: Optional[str] = Field(None, max_length=500)
 
 
 # ---------- auth ----------
@@ -113,8 +138,23 @@ def register(body: RegisterIn):
 def login(body: LoginIn):
     with get_conn() as c:
         row = c.execute("SELECT * FROM users WHERE username=?", (body.username.lower(),)).fetchone()
+        now = datetime.utcnow()
+        if row and row["locked_until"] and row["locked_until"] > now.isoformat():
+            raise HTTPException(423, f"Account locked after {MAX_FAILED_LOGINS} failed attempts. "
+                                     f"Try again in {LOCK_MINUTES} minutes.")
         if not row or not verify_password(body.password, row["password_hash"]):
+            if row:
+                attempts = row["failed_attempts"] + 1
+                if attempts >= MAX_FAILED_LOGINS:
+                    until = (now + timedelta(minutes=LOCK_MINUTES)).isoformat()
+                    c.execute("UPDATE users SET failed_attempts=0, locked_until=? WHERE id=?", (until, row["id"]))
+                    c.commit()          # persist before raising (an exception inside `with` rolls back)
+                    raise HTTPException(423, f"Account locked after {MAX_FAILED_LOGINS} failed attempts. "
+                                             f"Try again in {LOCK_MINUTES} minutes.")
+                c.execute("UPDATE users SET failed_attempts=? WHERE id=?", (attempts, row["id"]))
+                c.commit()
             raise HTTPException(401, "Invalid username or password")
+        c.execute("UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=?", (row["id"],))
         token = secrets.token_hex(16)
         expires = (datetime.utcnow() + timedelta(hours=TOKEN_TTL_HOURS)).isoformat()
         c.execute("INSERT INTO tokens(token,user_id,expires_at) VALUES(?,?,?)", (token, row["id"], expires))
@@ -131,6 +171,29 @@ def logout(authorization: Optional[str] = Header(None), user=Depends(current_use
 @app.get("/api/me")
 def me(user=Depends(current_user)):
     return {k: user[k] for k in ("id", "username", "full_name", "role")}
+
+
+@app.put("/api/me")
+def update_profile(body: ProfileIn, user=Depends(current_user)):
+    name = body.full_name.strip()
+    if not name:
+        raise HTTPException(422, "Full name cannot be blank")
+    with get_conn() as c:
+        c.execute("UPDATE users SET full_name=? WHERE id=?", (name, user["id"]))
+    return {"id": user["id"], "username": user["username"], "full_name": name, "role": user["role"]}
+
+
+@app.post("/api/me/password")
+def change_password(body: PasswordIn, authorization: Optional[str] = Header(None), user=Depends(current_user)):
+    if not verify_password(body.current_password, user["password_hash"]):
+        raise HTTPException(400, "Current password is incorrect")
+    if body.new_password == body.current_password:
+        raise HTTPException(400, "New password must be different from the current password")
+    with get_conn() as c:
+        c.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password(body.new_password), user["id"]))
+        # sign out every other session; keep the one that made the change
+        c.execute("DELETE FROM tokens WHERE user_id=? AND token<>?", (user["id"], authorization[7:]))
+    return {"detail": "Password changed"}
 
 
 @app.get("/api/customers")
@@ -287,8 +350,99 @@ def pay_bill(bill_id: int, body: PayIn, user=Depends(current_user)):
             raise HTTPException(400, f"Amount must equal the amount due: {due_amount}")
         c.execute("UPDATE bills SET status=?, late_fee=?, paid_on=? WHERE id=?",
                   (billing.next_status(row["status"], "pay"), fee, paid_on.isoformat(), bill_id))
+        c.execute("INSERT INTO payments(bill_id,amount,late_fee,paid_on,method,paid_by) VALUES(?,?,?,?,?,?)",
+                  (bill_id, due_amount, fee, paid_on.isoformat(), body.method, user["id"]))
         updated = c.execute("SELECT * FROM bills WHERE id=?", (bill_id,)).fetchone()
         return dict(updated)
+
+
+# ---------- payments & receipts ----------
+PAYMENT_SELECT = """
+    SELECT p.id, p.bill_id, p.amount, p.late_fee, p.paid_on, p.method,
+           b.units, b.water_charge, b.fixed_charge, b.total AS bill_total, b.bill_date, b.due_date,
+           k.meter_no, k.type AS connection_type, k.address, k.customer_id, u.full_name AS customer_name
+    FROM payments p JOIN bills b ON b.id=p.bill_id
+    JOIN connections k ON k.id=b.connection_id JOIN users u ON u.id=k.customer_id"""
+
+
+def _payment_out(row) -> dict:
+    d = dict(row)
+    d["receipt_no"] = f"RCP-{d['id']:06d}"
+    return d
+
+
+@app.get("/api/payments")
+def list_payments(user=Depends(current_user)):
+    with get_conn() as c:
+        if user["role"] == "ADMIN":
+            rows = c.execute(PAYMENT_SELECT + " ORDER BY p.id DESC").fetchall()
+        else:
+            rows = c.execute(PAYMENT_SELECT + " WHERE k.customer_id=? ORDER BY p.id DESC", (user["id"],)).fetchall()
+    return [_payment_out(r) for r in rows]
+
+
+@app.get("/api/payments/{payment_id}")
+def get_receipt(payment_id: int, user=Depends(current_user)):
+    with get_conn() as c:
+        row = c.execute(PAYMENT_SELECT + " WHERE p.id=?", (payment_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, "Payment not found")
+    if user["role"] != "ADMIN" and row["customer_id"] != user["id"]:
+        raise HTTPException(403, "Not your payment")
+    return _payment_out(row)
+
+
+# ---------- complaints ----------
+COMPLAINT_SELECT = """
+    SELECT m.*, u.full_name AS customer_name, k.meter_no
+    FROM complaints m JOIN users u ON u.id=m.customer_id LEFT JOIN connections k ON k.id=m.connection_id"""
+
+
+@app.post("/api/complaints", status_code=201)
+def file_complaint(body: ComplaintIn, user=Depends(current_user)):
+    if user["role"] != "CUSTOMER":
+        raise HTTPException(403, "Only customers can file complaints")
+    with get_conn() as c:
+        if body.connection_id is not None:
+            conn = c.execute("SELECT customer_id FROM connections WHERE id=?", (body.connection_id,)).fetchone()
+            if not conn:
+                raise HTTPException(404, "Connection not found")
+            if conn["customer_id"] != user["id"]:
+                raise HTTPException(403, "Not your connection")
+        today = date.today().isoformat()
+        cur = c.execute(
+            "INSERT INTO complaints(customer_id,connection_id,category,description,status,created_on,updated_on) "
+            "VALUES(?,?,?,?,'OPEN',?,?)",
+            (user["id"], body.connection_id, body.category, body.description.strip(), today, today))
+        return dict(c.execute(COMPLAINT_SELECT + " WHERE m.id=?", (cur.lastrowid,)).fetchone())
+
+
+@app.get("/api/complaints")
+def list_complaints(user=Depends(current_user)):
+    with get_conn() as c:
+        if user["role"] == "ADMIN":
+            rows = c.execute(COMPLAINT_SELECT + " ORDER BY m.id DESC").fetchall()
+        else:
+            rows = c.execute(COMPLAINT_SELECT + " WHERE m.customer_id=? ORDER BY m.id DESC", (user["id"],)).fetchall()
+    return [dict(r) for r in rows]
+
+
+@app.patch("/api/complaints/{complaint_id}")
+def update_complaint(complaint_id: int, body: ComplaintUpdate, _=Depends(admin_only)):
+    with get_conn() as c:
+        row = c.execute("SELECT * FROM complaints WHERE id=?", (complaint_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "Complaint not found")
+        try:
+            new_status = cmp.next_status(row["status"], body.status)
+        except ValueError:
+            raise HTTPException(409, f"Cannot move a {row['status']} complaint to {body.status}")
+        resolution = (body.resolution or "").strip()
+        if new_status == "RESOLVED" and len(resolution) < cmp.MIN_RESOLUTION_LENGTH:
+            raise HTTPException(400, "A resolution note is required to resolve a complaint")
+        c.execute("UPDATE complaints SET status=?, resolution=?, updated_on=? WHERE id=?",
+                  (new_status, resolution or row["resolution"], date.today().isoformat(), complaint_id))
+        return dict(c.execute(COMPLAINT_SELECT + " WHERE m.id=?", (complaint_id,)).fetchone())
 
 
 # ---------- alerts ----------

@@ -1,0 +1,12 @@
+﻿client = <starlette.testclient.TestClient object at 0x00000128D71F3E50>
+
+    def test_TC_A101_whitespace_only_name_rejected_at_registration(client):
+        r = client.post("/api/auth/register", json={"username": "blanky", "password": "secret1", "full_name": "    "})
+>       assert r.status_code == 422
+E       assert 201 == 422
+E        +  where 201 = <Response [201 Created]>.status_code
+
+05_Test_Automation\test_account_security.py:109: AssertionError
+=========================== short test summary info ===========================
+FAILED 05_Test_Automation/test_account_security.py::test_TC_A101_whitespace_only_name_rejected_at_registration
+1 failed, 148 passed, 7 deselected in 28.46s
