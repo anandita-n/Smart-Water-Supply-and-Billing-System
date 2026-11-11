@@ -213,7 +213,7 @@ table.plain tr:last-child td { border-bottom: 0; }
 /* ---------- typography ---------- */
 body { font-family: "Montserrat", "Segoe UI", Arial, sans-serif; font-size: 13.5px; letter-spacing: .1px; }
 button, input, select, textarea { font-family: inherit; }
-h1, h2, .page-head h2, .hero h1, .hero h2 { font-family: "Lora", Georgia, "Times New Roman", serif; font-weight: 600; letter-spacing: 0; }
+h1, h2, .page-head h2, .hero h1, .hero h2 { font-family: "Times New Roman", Times, serif; font-weight: 600; letter-spacing: 0; }
 .nav-item { text-transform: uppercase; font-size: 11.5px; letter-spacing: .3px; font-weight: 600; padding: 0 9px; }
 .topbar-inner { gap: 16px; }
 .toolbar { gap: 28px; }
@@ -224,7 +224,7 @@ h1, h2, .page-head h2, .hero h1, .hero h2 { font-family: "Lora", Georgia, "Times
 .auth-aside { background: #0f3d7a; color: #fff; padding: 40px 56px; display: flex; flex-direction: column; justify-content: space-between; }
 .aside-brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; letter-spacing: .2px; }
 .aside-tile { width: 40px; height: 40px; border-radius: 10px; background: #fff; display: grid; place-items: center; }
-.aside-copy h2 { font-family: "Lora", Georgia, serif; font-weight: 500; font-size: 34px; line-height: 1.25; margin: 0 0 24px; color: #fff; }
+.aside-copy h2 { font-family: "Times New Roman", Times, serif; font-weight: 500; font-size: 34px; line-height: 1.25; margin: 0 0 24px; color: #fff; }
 .aside-copy ul { list-style: none; margin: 0; padding: 0; }
 .aside-copy li { padding: 10px 0 10px 22px; position: relative; color: #c9dcf2; border-top: 1px solid rgba(255,255,255,.14); }
 .aside-copy li::before { content: ""; position: absolute; left: 0; top: 19px; width: 8px; height: 8px; border-radius: 50%; background: #6fb1ee; }
@@ -233,7 +233,7 @@ h1, h2, .page-head h2, .hero h1, .hero h2 { font-family: "Lora", Georgia, "Times
 .auth-card { box-shadow: none; border-radius: 0; padding: 0; max-width: 380px; }
 .auth-logo { display: flex; align-items: center; gap: 10px; text-align: left; margin-bottom: 30px; }
 .auth-logo .auth-name { font-size: 20px; margin: 0; }
-.auth-card h1 { text-align: left; font-family: "Lora", Georgia, serif; font-size: 28px; font-weight: 600; margin: 0 0 6px; }
+.auth-card h1 { text-align: left; font-family: "Times New Roman", Times, serif; font-size: 28px; font-weight: 600; margin: 0 0 6px; }
 .auth-card .sub { text-align: left; margin: 0 0 24px; font-size: 14px; }
 .auth-card label { display: block; font-weight: 600; font-size: 13px; margin: 0 0 6px; }
 .auth-card input { margin-bottom: 18px; padding: 10px 12px; }
@@ -254,3 +254,22 @@ h1, h2, .page-head h2, .hero h1, .hero h2 { font-family: "Lora", Georgia, "Times
 .feed-reply { margin-top: 6px; padding-left: 10px; border-left: 3px solid #cfe0f3; color: #3b4148; }
 .feed-meta { margin-top: 6px; font-size: 12px; color: var(--muted); }
 .feed-meta .status { font-size: 12px; }
+
+/* sign-in photo panel */
+.auth-aside { background: linear-gradient(90deg, rgba(5,32,74,.55), rgba(5,32,74,.05) 70%), url("/static/login-bg.webp") center / cover no-repeat #0f3d7a; justify-content: flex-end; padding-bottom: 56px; }
+.aside-copy h2, .aside-copy li { text-shadow: 0 1px 8px rgba(0,20,60,.45); }
+.aside-copy li { color: #e3effc; }
+.aside-foot { display: none; }
+.aside-copy { display: none; }
+.auth-aside { background: url("/static/login-bg.webp") 30% center / cover no-repeat #0f3d7a; }
+
+/* image-side brand + Times New Roman headings */
+.auth-aside { position: relative; justify-content: flex-end; padding: 0 56px 64px; background: linear-gradient(0deg, rgba(3,24,58,.78) 0%, rgba(3,24,58,0) 42%), url("/static/login-bg.webp") 30% center / cover no-repeat #0f3d7a; }
+.aside-brand { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 16px; row-gap: 10px; }
+.aside-tile { width: 54px; height: 54px; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,20,60,.35); }
+.aside-word { font-family: "Times New Roman", Times, serif; font-size: 44px; font-weight: 700; line-height: 1; color: #fff; letter-spacing: .3px; }
+.aside-word b { color: #8cc4f5; font-weight: 700; }
+.aside-tag { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.35); font-size: 12.5px; letter-spacing: 1.6px; text-transform: uppercase; color: #d6e8fb; }
+.auth-card .auth-logo { display: none; }
+.wordmark, .auth-name { font-family: "Times New Roman", Times, serif; font-size: 1.15em; }
+@media (max-width: 800px) { .auth-card .auth-logo { display: flex; } }
