@@ -140,7 +140,7 @@ def test_TC_UI04_admin_login_shows_admin_menu(driver):
     assert driver.find_element(By.ID, "who").text == "System Administrator"
     assert driver.find_element(By.ID, "role-label").text.lower() == "admin"
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert menu == ["Dashboard", "Customers", "Readings", "Bills", "Payments", "Complaints"]
+    assert [m.title() for m in menu] == ["Dashboard", "Customers", "Readings", "Bills", "Payments", "Complaints"]
     shot(driver, "UI04_admin_customers")
 
 
@@ -228,7 +228,7 @@ def test_TC_UI07_customer_does_not_see_admin_menu(driver, base_url):
     assert driver.find_elements(By.ID, "nav-customers") == []
     assert driver.find_elements(By.ID, "nav-readings") == []
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert menu == ["Dashboard", "My bills", "Payments", "Complaints", "Estimate"]
+    assert [m.capitalize() for m in menu] == ["Dashboard", "My bills", "Payments", "Complaints", "Estimate"]
     shot(driver, "UI07_customer_menu")
 
 

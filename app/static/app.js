@@ -347,7 +347,7 @@ function renderEstimator() {
   $("view").innerHTML = `<h2>Estimate a bill</h2>
     <div class="form-box" style="margin-top:14px">
       <div class="row2"><div><label for="c-units">Water used (kL)</label><input id="c-units" type="number" min="0" step="0.01" placeholder="e.g. 25"></div>
-      <div><label for="c-type">Connection type</label><select id="c-type"><option>DOMESTIC</option><option>COMMERCIAL</option></select></div></div>
+      <div><label for="c-type">Connection type</label><select id="c-type"><option value="DOMESTIC">Domestic</option><option value="COMMERCIAL">Commercial</option></select></div></div>
       <button id="calc-btn" class="btn primary" style="margin-top:16px" type="button">Calculate</button>
       <div id="calc-out" class="calc-result" role="status"></div></div>
     <h3>Tariff</h3>
@@ -466,7 +466,7 @@ function openConnDialog() {
   $("conn-body").innerHTML = `
     <label for="a-cust">Customer</label><select id="a-cust"><option value="">Select customer</option>${S.customers.map((c) => `<option value="${c.id}">${esc(c.full_name)} (${esc(c.username)})</option>`).join("")}</select>
     <div class="row2"><div><label for="a-meter">Meter number</label><input id="a-meter" placeholder="e.g. MTR-1007"></div>
-    <div><label for="a-type">Type</label><select id="a-type"><option>DOMESTIC</option><option>COMMERCIAL</option></select></div></div>
+    <div><label for="a-type">Type</label><select id="a-type"><option value="DOMESTIC">Domestic</option><option value="COMMERCIAL">Commercial</option></select></div></div>
     <label for="a-addr">Address</label><input id="a-addr" placeholder="Service address">
     <div id="conn-msg" class="form-msg" role="alert" style="margin-top:10px"></div>`;
   $("conn-modal").classList.remove("hidden");
