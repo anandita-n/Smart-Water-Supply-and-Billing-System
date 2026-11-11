@@ -9,7 +9,11 @@ CREATE TABLE IF NOT EXISTS users(
   full_name TEXT NOT NULL,
   role TEXT NOT NULL CHECK(role IN ('ADMIN','CUSTOMER'))
 );
-CREATE TABLE IF NOT EXISTS tokens(token TEXT PRIMARY KEY, user_id INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS tokens(
+  token TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  expires_at TEXT NOT NULL DEFAULT '2000-01-01T00:00:00'
+);
 CREATE TABLE IF NOT EXISTS connections(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   customer_id INTEGER NOT NULL,
@@ -60,3 +64,7 @@ def get_conn() -> sqlite3.Connection:
 def init_db() -> None:
     with get_conn() as c:
         c.executescript(SCHEMA)
+        # migrate databases created before token expiry existed (DEF-003)
+        cols = [r["name"] for r in c.execute("PRAGMA table_info(tokens)")]
+        if "expires_at" not in cols:
+            c.execute("ALTER TABLE tokens ADD COLUMN expires_at TEXT NOT NULL DEFAULT '2000-01-01T00:00:00'")

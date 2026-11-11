@@ -2,7 +2,7 @@ import hashlib
 import os
 import secrets
 import sqlite3
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
@@ -15,6 +15,7 @@ from .db import get_conn, init_db
 
 app = FastAPI(title="Smart Water Supply and Billing System", version="1.0.0")
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+TOKEN_TTL_HOURS = 8
 
 
 # ---------- helpers ----------
@@ -46,7 +47,8 @@ def current_user(authorization: Optional[str] = Header(None)):
     token = authorization[7:]
     with get_conn() as c:
         row = c.execute(
-            "SELECT u.* FROM users u JOIN tokens t ON t.user_id=u.id WHERE t.token=?", (token,)
+            "SELECT u.* FROM users u JOIN tokens t ON t.user_id=u.id "
+            "WHERE t.token=? AND t.expires_at>?", (token, datetime.utcnow().isoformat()),
         ).fetchone()
     if not row:
         raise HTTPException(401, "Invalid token")
@@ -100,9 +102,9 @@ def register(body: RegisterIn):
         with get_conn() as c:
             cur = c.execute(
                 "INSERT INTO users(username,password_hash,full_name,role) VALUES(?,?,?,'CUSTOMER')",
-                (body.username, hash_password(body.password), body.full_name),
+                (body.username.lower(), hash_password(body.password), body.full_name),
             )
-            return {"id": cur.lastrowid, "username": body.username, "role": "CUSTOMER"}
+            return {"id": cur.lastrowid, "username": body.username.lower(), "role": "CUSTOMER"}
     except sqlite3.IntegrityError:
         raise HTTPException(409, "Username already exists")
 
@@ -110,17 +112,32 @@ def register(body: RegisterIn):
 @app.post("/api/auth/login")
 def login(body: LoginIn):
     with get_conn() as c:
-        row = c.execute("SELECT * FROM users WHERE username=?", (body.username,)).fetchone()
+        row = c.execute("SELECT * FROM users WHERE username=?", (body.username.lower(),)).fetchone()
         if not row or not verify_password(body.password, row["password_hash"]):
             raise HTTPException(401, "Invalid username or password")
         token = secrets.token_hex(16)
-        c.execute("INSERT INTO tokens(token,user_id) VALUES(?,?)", (token, row["id"]))
+        expires = (datetime.utcnow() + timedelta(hours=TOKEN_TTL_HOURS)).isoformat()
+        c.execute("INSERT INTO tokens(token,user_id,expires_at) VALUES(?,?,?)", (token, row["id"], expires))
     return {"token": token, "role": row["role"], "user_id": row["id"], "full_name": row["full_name"]}
+
+
+@app.post("/api/auth/logout")
+def logout(authorization: Optional[str] = Header(None), user=Depends(current_user)):
+    with get_conn() as c:
+        c.execute("DELETE FROM tokens WHERE token=?", (authorization[7:],))
+    return {"detail": "Logged out"}
 
 
 @app.get("/api/me")
 def me(user=Depends(current_user)):
     return {k: user[k] for k in ("id", "username", "full_name", "role")}
+
+
+@app.get("/api/customers")
+def list_customers(_=Depends(admin_only)):
+    with get_conn() as c:
+        rows = c.execute("SELECT id,username,full_name FROM users WHERE role='CUSTOMER' ORDER BY id").fetchall()
+    return [dict(r) for r in rows]
 
 
 # ---------- tariff ----------

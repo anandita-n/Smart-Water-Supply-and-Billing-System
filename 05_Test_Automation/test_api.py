@@ -285,3 +285,27 @@ def test_TC_A56_logout_invalidates_token(client, customer):
     _, h = customer
     assert client.post("/api/auth/logout", headers=h).status_code == 200
     assert client.get("/api/me", headers=h).status_code == 401
+
+
+def test_TC_A57_expired_token_rejected(client, customer):
+    from app.db import get_conn
+    _, h = customer
+    assert client.get("/api/me", headers=h).status_code == 200
+    with get_conn() as c:
+        c.execute("UPDATE tokens SET expires_at='2000-01-01T00:00:00'")
+    assert client.get("/api/me", headers=h).status_code == 401
+
+
+def test_TC_A58_admin_lists_customers(client, admin, customer):
+    r = client.get("/api/customers", headers=admin)
+    assert r.status_code == 200 and [c["username"] for c in r.json()] == ["alice"]
+    assert "password_hash" not in r.json()[0]
+
+
+def test_TC_A59_customer_cannot_list_customers(client, customer):
+    assert client.get("/api/customers", headers=customer[1]).status_code == 403
+
+
+def test_TC_A60_login_works_with_any_username_case(client, customer):
+    r = client.post("/api/auth/login", json={"username": "ALICE", "password": "secret1"})
+    assert r.status_code == 200
