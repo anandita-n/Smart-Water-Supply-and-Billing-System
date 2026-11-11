@@ -158,10 +158,10 @@ TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A114 to TC
 | TC-UI01 | Sign in with a wrong password | "Invalid username or password" is shown on the login screen |
 | TC-UI02 | Customer opens Estimate and enters 25 kL | "Total: ₹240.00" is shown |
 | TC-UI03 | Customer estimates with negative units | A validation error is shown |
-| TC-UI04 | Admin signs in | Header shows System Administrator / admin; the menu is exactly Customers, Readings, Bills |
+| TC-UI04 | Admin signs in | Header shows System Administrator / admin; the menu is exactly Dashboard, Customers, Readings, Bills, Payments, Complaints |
 | TC-UI05 | End to end: register; admin opens the New connection popup and creates a connection, uses Add reading twice on the Readings table and generates the bill; customer signs in, opens the payment dialog (₹240.00) and pays | Bill status changes from UNPAID to PAID |
 | TC-UI06 | Sign out, then reload the page | Login screen is shown; the session is gone |
-| TC-UI07 | Customer signs in | The menu is exactly My bills, Estimate; admin items are not shown |
+| TC-UI07 | Customer signs in | The menu is exactly Dashboard, My bills, Payments, Complaints, Estimate; admin items are not shown |
 | TC-UI08 | Customer pays a bill by card, then opens Payments and the receipt | Receipt number, card method, amount ₹240.00 and the meter are shown |
 | TC-UI09 | Customer files a leak complaint through the popup; admin opens Complaints, sees all three statuses with only the next one enabled, and moves it forward | Customer sees Open; the dialog lists Open (current, disabled), In progress, Resolved (disabled); the row then shows In progress |
 | TC-UI10 | Customer opens Profile, three-dots menu, Change password (first with a mismatching confirmation) | "do not match" message, then a "Password changed" notice; sign-in with the new password works |
@@ -171,3 +171,6 @@ TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A114 to TC
 | TC-UI14 | Admin filters customers by connection type | Commercial shows only commercial customers; Domestic shows only domestic ones |
 | TC-UI15 | Admin visits Customers, Readings, Bills, Payments, Complaints | No caption line is shown under any page heading |
 | TC-UI16 | Admin opens Readings for a meter that is already billed, then adds a new reading | Generate bill is disabled while billed, enabled after the new reading |
+| TC-UI17 | Admin signs in | Dashboard is the landing page; shows a non-zero Outstanding figure, a Needs attention panel and Recent payments |
+| TC-UI18 | Customer with one unpaid bill signs in, clicks Pay now on the dashboard and confirms | Amount due shows ₹240.00, the dialog total is ₹240.00, afterwards the dashboard says all paid up with ₹0.00 due |
+| TC-UI19 | Admin with an overdue bill clicks the overdue item in Needs attention | Bills page opens with the Overdue filter selected and no Unpaid rows |

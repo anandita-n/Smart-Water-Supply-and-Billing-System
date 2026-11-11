@@ -25,6 +25,7 @@ A water utility system with:
 - Tiered tariff billing: Rs 5, 8, 12 and 20 per kL by slab; commercial charges 1.5x; fixed monthly charge
 - Bill lifecycle UNPAID, OVERDUE, PAID, with a due date 15 days after the bill date and a late fee
 - Payments (exact amount, late fee included) with a payment history and printable receipts
+- A short dashboard as the landing page: for the admin, key money figures, a "needs attention" list and recent payments; for a customer, the amount due with Pay now and the latest bill
 - Admin can open any customer to see their history (bills, payments, complaints, meter readings); the customer list has a type filter and search
 - Complaints: customers report leaks, billing or supply problems; the admin moves them OPEN, IN_PROGRESS, RESOLVED
 - Account security: lock-out after 5 failed sign-ins, profile page, password change
@@ -35,6 +36,10 @@ A water utility system with:
 | Sign in | Customer bills |
 |---|---|
 | ![Sign in](07_Screenshots/Demo01_sign_in.png) | ![Customer bills](07_Screenshots/Demo05_customer_bills.png) |
+
+| Admin dashboard | Customer dashboard |
+|---|---|
+| ![Admin dashboard](07_Screenshots/Demo19_admin_dashboard.png) | ![Customer dashboard](07_Screenshots/Demo20_customer_dashboard.png) |
 
 | Payment receipt | Admin: complaints |
 |---|---|
@@ -55,7 +60,7 @@ A water utility system with:
 More are in `07_Screenshots/`.
 
 ## Results at a glance
-- **169 automated test cases** (36 unit, 117 API, 16 Selenium UI): 87 of 89 passed on run 1; all 169 pass on the final run
+- **172 automated test cases** (36 unit, 117 API, 19 Selenium UI): 87 of 89 passed on run 1; all 172 pass on the final run
 - **5 defects** found by the tests, all fixed and retested (see `04_Defect_Reports/README.md`)
 - **98%** statement coverage of the `app` package
 
@@ -92,7 +97,7 @@ app/                     Application source (FastAPI backend + static UI)
 03_Test_Execution/       Execution log (run 1 vs run 2)
 04_Defect_Reports/       DEF-001 to DEF-005 with a summary table
 05_Test_Automation/      pytest unit/API tests and Selenium UI tests
-06_Test_Reports/         JUnit XML for 9 runs, coverage output, test summary report
+06_Test_Reports/         JUnit XML for 10 runs, coverage output, test summary report
 07_Screenshots/          Selenium screenshots
 Conclusion.md
 ```
