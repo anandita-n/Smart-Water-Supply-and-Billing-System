@@ -489,6 +489,8 @@ def test_TC_UI21_login_page_shows_the_hydrocore_brand_and_wave(driver):
     assert driver.title == "HydroCore"
     assert driver.find_element(By.CSS_SELECTOR, ".auth-name").text == "HydroCore"
     assert driver.find_element(By.CSS_SELECTOR, ".auth-wave").is_displayed()
+    assert len(driver.find_elements(By.CSS_SELECTOR, ".auth-wave path")) == 1        # a single wave, no paler second layer
+    assert driver.find_elements(By.CSS_SELECTOR, ".auth-logo svg use")                # the HydroCore mark, not a plain drop
     shot(driver, "UI21_login_wave")
     login_as_admin(driver)
     assert driver.find_element(By.CSS_SELECTOR, ".brand span").text == "HydroCore"
