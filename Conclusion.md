@@ -1,7 +1,7 @@
 ﻿# Conclusion
 
 We built the Smart Water Supply and Billing System ("AquaBill": FastAPI, SQLite and a web UI) and then
-tested it as a team. The testing covered a test plan, 97 designed and executed test cases, defect reporting,
+tested it as a team. The testing covered a test plan, 99 designed and executed test cases, defect reporting,
 and two automation tools (pytest and Selenium).
 
 **What the testing showed**
@@ -12,8 +12,8 @@ and two automation tools (pytest and Selenium).
   - DEF-002: `units=inf` crashed the calculator with HTTP 500.
   - DEF-003: login tokens never expired and could not be revoked (no logout).
   - DEF-004: usernames were case-sensitive, so look-alike accounts could be registered.
-- Every defect was fixed and retested. The suite went from 87/89 passing on run 1 to 97/97 on the final run.
-- Statement coverage reached 99% of the `app` package.
+- Every defect was fixed and retested. The suite went from 87/89 passing on run 1 to 99/99 on the final run.
+- Statement coverage reached 98% of the `app` package.
 
 **What we learned**
 - Designing tests from the business rules rather than from the code is what exposed the missing

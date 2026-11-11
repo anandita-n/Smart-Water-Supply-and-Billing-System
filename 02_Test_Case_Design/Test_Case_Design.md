@@ -97,15 +97,15 @@ endpoints), TC-A22 and TC-A34 (data isolation between customers), TC-A46 (paying
 ## 8. Functional and integration (API)
 TC-A02, A10 to A12 (auth), TC-A18 to A20 (connections), TC-A23, A28 (readings),
 TC-A30 to A33, A36 (bill generation), TC-A31 (amounts and due date), TC-A49 (commercial bill),
-TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list).
+TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A61 and TC-A62 (demo data loader: 6 customers incl. S Anandita Narayan and Vivan Raj Belur, safe to run twice, customers can sign in).
 
 ## 9. UI test cases (Selenium, Microsoft Edge headless)
 | ID | Scenario | Expected |
 |---|---|---|
 | TC-UI01 | Sign in with a wrong password | "Invalid username or password" is shown on the login screen |
-| TC-UI02 | Estimate a bill for 25 kL | "Total: ₹240.00" is shown |
-| TC-UI03 | Estimate with negative units | A validation error is shown |
-| TC-UI04 | Admin signs in | Header shows System Administrator / admin and the Customers menu is visible |
+| TC-UI02 | Customer opens Estimate and enters 25 kL | "Total: ₹240.00" is shown |
+| TC-UI03 | Customer estimates with negative units | A validation error is shown |
+| TC-UI04 | Admin signs in | Header shows System Administrator / admin; the menu is exactly Customers, Readings, Bills |
 | TC-UI05 | End to end: register; admin creates a connection, two readings and a bill; customer signs in, opens the payment dialog (₹240.00) and pays | Bill status changes from UNPAID to PAID |
 | TC-UI06 | Sign out, then reload the page | Login screen is shown; the session is gone |
-| TC-UI07 | Customer signs in | Admin-only menu items (Customers, Meter readings) are not shown |
+| TC-UI07 | Customer signs in | The menu is exactly My bills, Estimate; admin items are not shown |

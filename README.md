@@ -1,4 +1,4 @@
-# Smart Water Supply and Billing System
+﻿# Smart Water Supply and Billing System
 
 Software Testing portfolio (Other Component), with the application under test and its complete test deliverables.
 
@@ -26,19 +26,23 @@ A water utility system with:
 - Bill lifecycle UNPAID, OVERDUE, PAID, with a due date 15 days after the bill date and a late fee
 - Payments (exact amount, late fee included)
 - Leak / high-usage alerts
-- A web app (sidebar navigation, dashboards, usage chart, payment dialog) and a REST API (interactive docs at `/docs`)
+- A web app (sign-in page, top navigation, bills, readings, payment dialog) and a REST API (interactive docs at `/docs`)
 
 ## Screenshots
-| Sign in | Customer payment dialog |
+| Sign in | Customer bills |
 |---|---|
-| ![Login](07_Screenshots/UI01_login_screen_error.png) | ![Payment](07_Screenshots/UI05b_payment_dialog.png) |
+| ![Sign in](07_Screenshots/Demo01_sign_in.png) | ![Customer bills](07_Screenshots/Demo05_customer_bills.png) |
+
+| Admin: all bills | Payment dialog |
+|---|---|
+| ![Admin bills](07_Screenshots/Demo03_admin_bills.png) | ![Payment](07_Screenshots/Demo06_payment_dialog.png) |
 
 More are in `07_Screenshots/`.
 
 ## Results at a glance
-- **97 automated test cases** (30 unit, 60 API, 7 Selenium UI): 87 of 89 passed on run 1; all 97 pass on the final run
+- **99 automated test cases** (30 unit, 62 API, 7 Selenium UI): 87 of 89 passed on run 1; all 99 pass on the final run
 - **4 defects** found by the tests, all fixed and retested (see `04_Defect_Reports/README.md`)
-- **99%** statement coverage of the `app` package
+- **98%** statement coverage of the `app` package
 
 ## Run the application
 ```bash
@@ -46,7 +50,14 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 Open http://127.0.0.1:8000 for the UI or http://127.0.0.1:8000/docs for the API.
-A seeded admin account is created on first start: `admin` / `admin123` (demo only).
+An admin account is created on first start: `admin` / `admin123` (demo only).
+
+### Load the demo data (6 customers, 18 bills)
+```bash
+python -m app.seed
+```
+Customers: `anandita`, `vivan`, `rohan`, `priya`, `karthik`, `meera`, all with the password `water123`.
+The data has paid, unpaid and overdue bills, a late payment with a fee, and a high-usage alert (karthik).
 
 ## Run the tests
 ```bash

@@ -11,26 +11,28 @@
 | Run 1 | Baseline (unit, API, first UI tests) | 89 | 87 | 2 |
 | Run 2 | After fixing DEF-001 and DEF-002 | 89 | 89 | 0 |
 | Run 3 | New tests TC-A55 and TC-A56 added; UI tests not run | 86 | 84 | 2 |
-| Run 4 | After fixing DEF-003 and DEF-004, the redesigned UI and rewritten UI tests | 97 | 97 | 0 |
+| Run 4 | After fixing DEF-003 and DEF-004, the first UI redesign and rewritten UI tests | 97 | 97 | 0 |
+| Run 5 | Final: minimal sign-in page, top navigation, seed data (TC-A61, TC-A62), updated UI tests | 99 | 99 | 0 |
 
-Raw results: `run1_baseline.xml`, `run2_after_fixes.xml`, `run3_new_tests.xml`, `run4_final.xml` (JUnit XML) and the `*_summary.txt` files.
+Raw results: `run1_baseline.xml` to `run5_ui_redesign.xml` (JUnit XML) and the `*_summary.txt` files.
 Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
-### Final test inventory (run 4)
+### Final test inventory (run 5)
 | Level | Technique(s) | Test cases |
 |---|---|---|
 | Unit (`test_billing_unit.py`) | BVA, equivalence partitioning, decision table, state transition | 30 |
-| API (`test_api.py`) | Equivalence partitioning, BVA, RBAC, error guessing | 60 |
+| API (`test_api.py`, `test_seed.py`) | Equivalence partitioning, BVA, RBAC, error guessing, data loading | 62 |
 | UI (`test_ui_selenium.py`) | Scenario-based, end to end | 7 |
-| **Total** | | **97** |
+| **Total** | | **99** |
 
-## 2. Code coverage (pytest-cov, run 4)
+## 2. Code coverage (pytest-cov, run 5)
 | File | Statements | Missed | Coverage |
 |---|---|---|---|
 | app/billing.py | 48 | 0 | 100% |
 | app/db.py | 15 | 1 | 93% |
 | app/main.py | 204 | 1 | 99% |
-| **Total** | 267 | 2 | **99%** (exit criterion: at least 90%) |
+| app/seed.py | 44 | 3 | 93% |
+| **Total** | 311 | 5 | **98%** (exit criterion: at least 90%) |
 
 ## 3. Defects
 | ID | Title | Severity | Found by | Status |
@@ -48,10 +50,10 @@ Details are in `04_Defect_Reports/`.
 | All planned test cases executed | Yes |
 | No open Critical/High defects | Yes (4 Medium defects found, all closed) |
 | Fixed defects retested | Yes (runs 2 and 4) |
-| Coverage of `app` at least 90% | Yes (99%) |
+| Coverage of `app` at least 90% | Yes (98%) |
 
 ## 5. Known risks and recommendations
-- The UI was tested in Edge only. UI tests UI06 and UI07 rely on the customer created in UI05, so they run in file order.
+- The UI was tested in Edge only. During run 5 one UI test failed intermittently because the page re-rendered while the test was selecting a dropdown option (a test timing problem, not an application defect). The test now waits and retries, and the UI suite passed repeatedly afterwards.
 - No load or performance testing was done. Bill generation is a single-record operation, so the risk is low for this scope.
 - Meter readings are entered manually by the admin; a real deployment would need automatic meter feeds and tests for those.
 - Passwords are hashed with PBKDF2, but there is no lock-out after repeated failed logins. This is a candidate for a future test and fix.

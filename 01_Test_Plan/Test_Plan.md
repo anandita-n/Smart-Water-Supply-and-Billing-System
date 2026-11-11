@@ -20,7 +20,7 @@ leak/high-usage alerts. This plan describes how the system is tested.
 | M4 | Tariff & billing | Slab charges, commercial multiplier, fixed charge, bill generation, due date | Unit, API, UI |
 | M5 | Payments | Exact-amount payment, late fee, double payment, ownership | Unit, API, UI |
 | M6 | Alerts | High usage (> 100 kL) and spike (> 3x average) alerts | Unit, API |
-| M7 | Web UI | Login/register, sidebar navigation by role, dashboards, bill estimator, customer and connection management, readings, payment dialog, sign out | UI (Selenium) |
+| M7 | Web UI | Sign in/create account, top navigation by role (admin: Customers, Readings, Bills; customer: My bills, Estimate), payment dialog, sign out | UI (Selenium) |
 
 ### Business rules (the test oracle)
 - Slabs per month: 0-10 kL at Rs 5, 10-20 kL at Rs 8, 20-30 kL at Rs 12, above 30 kL at Rs 20.
