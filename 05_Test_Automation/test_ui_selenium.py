@@ -482,3 +482,29 @@ def test_TC_UI20_save_reading_and_generate_bill_in_one_step(driver, base_url):
     assert not driver.find_element(By.CSS_SELECTOR, ".gen-btn[data-meter='ONESTEP1']").is_enabled()   # billed again
     open_page(driver, "bills")
     WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "bill-rows"), "Billed onestep"))
+
+
+# ---------------- branding, login wave, dashboard charts ----------------
+def test_TC_UI21_login_page_shows_the_hydrocore_brand_and_wave(driver):
+    assert driver.title == "HydroCore"
+    assert driver.find_element(By.CSS_SELECTOR, ".auth-name").text == "HydroCore"
+    assert driver.find_element(By.CSS_SELECTOR, ".auth-wave").is_displayed()
+    shot(driver, "UI21_login_wave")
+    login_as_admin(driver)
+    assert driver.find_element(By.CSS_SELECTOR, ".brand span").text == "HydroCore"
+    assert "AquaBill" not in driver.page_source
+
+
+def test_TC_UI22_dashboards_show_a_greeting_and_a_chart(driver, base_url):
+    make_billed_customer(base_url, "chartcust", "CHARTMTR1")
+    login_as_admin(driver)
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#dash-chart svg rect")))
+    assert driver.find_element(By.ID, "hero-title").text.startswith("Good ")
+    assert len(driver.find_elements(By.CSS_SELECTOR, "#dash-chart svg rect")) == 12          # 6 months x (billed, collected)
+    logout(driver)
+    login(driver, "chartcust", "secret1")
+    wait_visible(driver, "app")
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#dash-chart svg rect")))
+    assert "Billed" in driver.find_element(By.ID, "hero-title").text                          # greets by first name
+    assert len(driver.find_elements(By.CSS_SELECTOR, "#dash-chart svg rect")) == 1            # one bill, one bar
+    shot(driver, "UI22_customer_chart")
