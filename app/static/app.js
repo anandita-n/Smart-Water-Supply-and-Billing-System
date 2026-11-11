@@ -72,7 +72,7 @@ $("register-form").onsubmit = async (e) => {
 
 function startSession(token, role, name, userId) {
   S.token = token; S.role = role; S.name = name; S.userId = userId;
-  try { sessionStorage.setItem("aqua", JSON.stringify({ token, role, name, userId })); } catch (e) {}
+  try { sessionStorage.setItem("hydrocore", JSON.stringify({ token, role, name, userId })); } catch (e) {}
   $("auth-screen").classList.add("hidden");
   $("app").classList.remove("hidden");
   $("who").textContent = name;
@@ -83,7 +83,7 @@ function startSession(token, role, name, userId) {
 
 function endSession() {
   S.token = null; S.role = null;
-  try { sessionStorage.removeItem("aqua"); } catch (e) {}
+  try { sessionStorage.removeItem("hydrocore"); } catch (e) {}
   $("app").classList.add("hidden");
   $("auth-screen").classList.remove("hidden");
   $("l-pass").value = "";
@@ -123,6 +123,54 @@ async function loadData() {
 }
 
 /* ---------------- dashboard: only what needs a decision today ---------------- */
+function greeting() { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; }
+function firstName() {
+  if (S.role === "ADMIN") return "Administrator";
+  const parts = S.name.replace(/\(.*?\)/g, "").trim().split(/\s+/);
+  return parts[0].length === 1 && parts[1] ? parts[1] : parts[0];
+}
+const hero = () => `<div class="hero"><div><div class="hero-title" id="hero-title">${greeting()}, ${esc(firstName())}</div>
+  <div class="hero-date">${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div></div>
+  <svg class="hero-wave" viewBox="0 0 400 100" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,62 C80,22 140,92 220,56 C290,26 340,62 400,36 V100 H0Z" fill="#cfe5f8"/><path d="M0,82 C90,52 170,100 260,74 C320,54 360,80 400,68 V100 H0Z" fill="#b4d6f2"/></svg></div>`;
+
+/* A small dependency-free bar chart (SVG). series = [{ name, color, values }] */
+function barChart(labels, series, { compact = true, showValues = false } = {}) {
+  const W = 900, H = 210, L = 46, B = 28, T = 14, R = 8;
+  const max = Math.max(1, ...series.flatMap((s) => s.values));
+  const pow = 10 ** Math.floor(Math.log10(max));
+  const top = Math.ceil(max / pow) * pow;
+  const fmt = (n) => (compact && n >= 1000 ? round2(n / 1000) + "k" : String(round2(n)));
+  const plotW = W - L - R, plotH = H - T - B;
+  const groupW = plotW / labels.length;
+  const barW = Math.min(44, (groupW * 0.7) / series.length);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map((s) => s.name).join(" and "))} by period">`;
+  for (let i = 0; i <= 2; i++) {
+    const v = (top / 2) * i, y = T + plotH - (v / top) * plotH;
+    svg += `<line class="ch-grid" x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/><text class="ch-axis" x="${L - 6}" y="${y + 4}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  labels.forEach((lab, i) => {
+    const gx = L + i * groupW + groupW / 2;
+    series.forEach((s, k) => {
+      const val = s.values[i], h = (val / top) * plotH;
+      const x = gx - (barW * series.length) / 2 + k * barW + (k ? 2 : 0);
+      svg += `<rect x="${x}" y="${T + plotH - h}" width="${barW - (series.length > 1 ? 4 : 0)}" height="${Math.max(h, val ? 2 : 0)}" rx="2" fill="${s.color}"><title>${esc(lab)}: ${esc(s.name)} ${fmt(val)}</title></rect>`;
+      if (showValues && val) svg += `<text class="ch-val" x="${x + (barW - (series.length > 1 ? 4 : 0)) / 2}" y="${T + plotH - h - 5}" text-anchor="middle">${fmt(val)}</text>`;
+    });
+    svg += `<text class="ch-axis" x="${gx}" y="${H - 8}" text-anchor="middle">${esc(lab)}</text>`;
+  });
+  return svg + "</svg>";
+}
+
+function lastMonths(n) {                                   // [{ key: "2026-11", label: "Nov" }, ...] oldest first
+  const out = [], d = new Date();
+  d.setDate(1);
+  for (let i = n - 1; i >= 0; i--) {
+    const m = new Date(d.getFullYear(), d.getMonth() - i, 1);
+    out.push({ key: `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}`, label: m.toLocaleDateString("en-IN", { month: "short" }) });
+  }
+  return out;
+}
 const daysOver = (due) => Math.max(0, Math.round((new Date(todayISO()) - new Date(due)) / 86400000));
 const goLink = (page, text, filter) => `<button class="link go-link" data-page="${page}" ${filter ? `data-filter="${filter}"` : ""} type="button">${text}</button>`;
 function bindGoLinks() {
@@ -158,11 +206,17 @@ async function adminDashboard() {
   ].filter(([n]) => n > 0);
   const recent = payments.slice().sort((a, b) => b.paid_on.localeCompare(a.paid_on) || b.id - a.id).slice(0, 5);
 
-  $("view").innerHTML = `<h2>Dashboard</h2>
-    <div class="summary" style="margin-top:14px">
+  const months = lastMonths(6);
+  const billedSeries = months.map((m) => round2(S.bills.filter((b) => b.bill_date.startsWith(m.key)).reduce((s, b) => s + b.total, 0)));
+  const collectedSeries = months.map((m) => round2(payments.filter((p) => p.paid_on.startsWith(m.key)).reduce((s, p) => s + p.amount, 0)));
+  $("view").innerHTML = `${hero()}
+    <div class="summary">
       <div><span class="k">Outstanding</span><span class="v" id="dash-outstanding">${money(outstanding)}</span></div>
       <div><span class="k">Collected this month</span><span class="v">${money(collected)}</span></div>
       <div><span class="k">Water billed this month</span><span class="v">${billedKl} kL</span></div></div>
+    <div class="panel chart-panel"><h3>Billed and collected, last 6 months
+        <span class="legend"><i style="background:#9ec9ee"></i>Billed<i style="background:#1558b0"></i>Collected</span></h3>
+      <div class="chart" id="dash-chart">${barChart(months.map((m) => m.label), [{ name: "Billed", color: "#9ec9ee", values: billedSeries }, { name: "Collected", color: "#1558b0", values: collectedSeries }])}</div></div>
     <div class="dash-grid">
       <div class="panel"><h3>Needs attention</h3>${items.length
         ? `<ul class="attn" id="attention-list">${items.map(([n, text, link]) => `<li><span><strong>${n}</strong> ${text}</span>${link}</li>`).join("")}</ul>`
@@ -186,9 +240,10 @@ async function customerDashboard() {
   const openComplaints = complaints.filter((c) => c.status !== "RESOLVED").length;
   const alert = recentAlerts().pop();
 
-  $("view").innerHTML = `<h2>Dashboard</h2>
-    ${alert ? `<div class="notice" style="margin-top:14px"><strong>High water usage detected.</strong> ${esc(alert.message)} on meter ${esc(connLabel(alert.connection_id))}. If you have not used that much, check for a leak and ${goLink("complaints", "report it")}.</div>` : ""}
-    <div class="dash-grid" style="margin-top:14px">
+  const usage = S.bills.slice(-6);
+  $("view").innerHTML = `${hero()}
+    ${alert ? `<div class="notice"><strong>High water usage detected.</strong> ${esc(alert.message)} on meter ${esc(connLabel(alert.connection_id))}. If you have not used that much, check for a leak and ${goLink("complaints", "report it")}.</div>` : ""}
+    <div class="dash-grid">
       <div class="panel"><h3>Amount due</h3>
         <div class="big" id="dash-due">${money(due)}</div>
         ${oldest ? `<p class="muted">${oldest.status === "OVERDUE" ? `Overdue since ${oldest.due_date}` : `Due by ${oldest.due_date}`}${open.length > 1 ? `, ${open.length} bills pending` : ""}</p>
@@ -202,6 +257,9 @@ async function customerDashboard() {
         ${diff === null ? "" : `<p class="muted small" style="margin-bottom:0">${diff === 0 ? "Same usage as the previous bill." : `${Math.abs(diff)} kL ${diff > 0 ? "more" : "less"} than the previous bill.`}</p>`}
         <div style="margin-top:8px">${goLink("bills", "All bills")}</div>` : '<p class="muted">No bills yet.</p>'}</div>
     </div>
+    <div class="panel chart-panel"><h3>Your water usage (kL), last ${usage.length || 6} bills</h3>
+      <div class="chart" id="dash-chart">${usage.length ? barChart(usage.map((b) => new Date(b.bill_date + "T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" })),
+        [{ name: "Usage (kL)", color: "#1558b0", values: usage.map((b) => b.units) }], { compact: false, showValues: true }) : '<p class="muted">Your usage will appear here after your first bill.</p>'}</div></div>
     ${openComplaints ? `<p class="muted" style="margin-top:4px">You have ${openComplaints} open ${plural(openComplaints, "complaint", "complaints")}. ${goLink("complaints", "View")}</p>` : ""}`;
   if (oldest) $("dash-pay").onclick = () => openPay(oldest.id);
   bindGoLinks();
@@ -525,7 +583,7 @@ async function renderPayments() {
 async function openReceipt(id) {
   try {
     const r = await api("/payments/" + id);
-    $("receipt-body").innerHTML = `<div class="receipt-head"><strong>AquaBill - Water Supply &amp; Billing</strong>
+    $("receipt-body").innerHTML = `<div class="receipt-head"><strong>HydroCore - Water Supply &amp; Billing</strong>
       <span class="receipt-no">Receipt ${r.receipt_no} &middot; ${r.paid_on}</span></div>
       <table class="kv"><tr><td>Customer</td><td>${esc(r.customer_name)}</td></tr>
         <tr><td>Meter</td><td>${esc(r.meter_no)} (${r.connection_type[0] + r.connection_type.slice(1).toLowerCase()})</td></tr>
@@ -668,7 +726,7 @@ $("p-name-btn").onclick = async () => {
   try {
     const d = await api("/me", "PUT", { full_name: $("p-name").value });
     S.name = d.full_name; $("who").textContent = d.full_name;
-    try { sessionStorage.setItem("aqua", JSON.stringify({ token: S.token, role: S.role, name: S.name, userId: S.userId })); } catch (e) {}
+    try { sessionStorage.setItem("hydrocore", JSON.stringify({ token: S.token, role: S.role, name: S.name, userId: S.userId })); } catch (e) {}
     $("pn-modal").classList.add("hidden");
     toast("Name updated");
     go("profile");
@@ -698,7 +756,7 @@ $("p-pass-btn").onclick = async () => {
 /* ---------------- boot: restore session ---------------- */
 (async function boot() {
   try {
-    const saved = JSON.parse(sessionStorage.getItem("aqua") || "null");
+    const saved = JSON.parse(sessionStorage.getItem("hydrocore") || "null");
     if (saved && saved.token) {
       S.token = saved.token;
       await api("/me");

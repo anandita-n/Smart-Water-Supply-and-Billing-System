@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AquaBill</title>
+<title>HydroCore</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z' fill='%231558b0'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -11,14 +11,19 @@
 
 <!-- ============ SIGN IN / CREATE ACCOUNT ============ -->
 <div id="auth-screen" class="auth-screen">
+  <svg class="auth-wave" viewBox="0 0 1440 340" preserveAspectRatio="none" aria-hidden="true">
+    <path fill="#e3f0fb" d="M0,0H1440V250C1210,330 1010,170 760,225C520,278 290,345 0,250Z"/>
+    <path fill="#c4def5" d="M0,0H1440V200C1230,280 1030,120 780,172C540,222 300,300 0,205Z"/>
+  </svg>
   <div class="auth-card">
     <div class="auth-logo">
-      <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#1558b0"/></svg>
+      <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#1558b0"/></svg>
+      <div class="auth-name">HydroCore</div>
     </div>
 
     <form id="login-form" autocomplete="on" novalidate>
       <h1>Sign in</h1>
-      <p class="sub">to continue to AquaBill</p>
+      <p class="sub">to continue to HydroCore</p>
       <input id="l-user" aria-label="Username" autocomplete="username" placeholder="Username">
       <input id="l-pass" type="password" aria-label="Password" autocomplete="current-password" placeholder="Password">
       <div id="auth-msg" class="form-msg" role="alert"></div>
@@ -30,7 +35,7 @@
 
     <form id="register-form" class="hidden" novalidate>
       <h1>Create account</h1>
-      <p class="sub">for AquaBill customers</p>
+      <p class="sub">for HydroCore customers</p>
       <input id="r-name" aria-label="Full name" placeholder="Full name">
       <input id="r-user" aria-label="Username" placeholder="Username (3-30 letters, numbers or _)">
       <input id="r-pass" type="password" aria-label="Password" placeholder="Password (at least 6 characters)">
@@ -49,7 +54,7 @@
     <div class="topbar-inner">
       <div class="brand">
         <svg viewBox="0 0 64 64" width="22" height="22" aria-hidden="true"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#1558b0"/></svg>
-        <span>AquaBill</span>
+        <span>HydroCore</span>
       </div>
       <nav id="nav"></nav>
       <div class="user">
