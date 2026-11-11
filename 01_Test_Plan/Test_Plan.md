@@ -1,4 +1,4 @@
-# Test Plan: Smart Water Supply and Billing System
+﻿# Test Plan: Smart Water Supply and Billing System
 
 | | |
 |---|---|
@@ -14,13 +14,13 @@ leak/high-usage alerts. This plan describes how the system is tested.
 ## 2. Application modules and functionalities to be tested
 | # | Module | Functionality | Test levels |
 |---|---|---|---|
-| M1 | Authentication | Register, login, token check, role-based access (ADMIN / CUSTOMER) | API, UI |
+| M1 | Authentication | Register, login, logout, token expiry, case-insensitive usernames, role-based access (ADMIN / CUSTOMER) | API, UI |
 | M2 | Connections | Create connection, unique meter number, ownership, listing | API |
 | M3 | Meter readings | Add reading; no decrease, no date going backwards, no future dates | API |
 | M4 | Tariff & billing | Slab charges, commercial multiplier, fixed charge, bill generation, due date | Unit, API, UI |
 | M5 | Payments | Exact-amount payment, late fee, double payment, ownership | Unit, API, UI |
 | M6 | Alerts | High usage (> 100 kL) and spike (> 3x average) alerts | Unit, API |
-| M7 | Web UI | Login, bill estimator, admin panel, customer bill payment | UI (Selenium) |
+| M7 | Web UI | Login/register, sidebar navigation by role, dashboards, bill estimator, customer and connection management, readings, payment dialog, sign out | UI (Selenium) |
 
 ### Business rules (the test oracle)
 - Slabs per month: 0-10 kL at Rs 5, 10-20 kL at Rs 8, 20-30 kL at Rs 12, above 30 kL at Rs 20.

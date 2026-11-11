@@ -26,11 +26,18 @@ A water utility system with:
 - Bill lifecycle UNPAID, OVERDUE, PAID, with a due date 15 days after the bill date and a late fee
 - Payments (exact amount, late fee included)
 - Leak / high-usage alerts
-- A web UI and a REST API (interactive docs at `/docs`)
+- A web app (sidebar navigation, dashboards, usage chart, payment dialog) and a REST API (interactive docs at `/docs`)
+
+## Screenshots
+| Sign in | Customer payment dialog |
+|---|---|
+| ![Login](07_Screenshots/UI01_login_screen_error.png) | ![Payment](07_Screenshots/UI05b_payment_dialog.png) |
+
+More are in `07_Screenshots/`.
 
 ## Results at a glance
-- **89 automated test runs**: 87 passed and 2 failed on run 1; all 89 passed after fixes
-- **3 defects** logged (2 fixed and retested, 1 low-severity deferred)
+- **97 automated test cases** (30 unit, 60 API, 7 Selenium UI): 87 of 89 passed on run 1; all 97 pass on the final run
+- **4 defects** found by the tests, all fixed and retested (see `04_Defect_Reports/README.md`)
 - **99%** statement coverage of the `app` package
 
 ## Run the application
@@ -55,9 +62,9 @@ app/                     Application source (FastAPI backend + static UI)
 01_Test_Plan/            Test plan
 02_Test_Case_Design/     Test cases: BVA, equivalence partitioning, decision tables, state transition
 03_Test_Execution/       Execution log (run 1 vs run 2)
-04_Defect_Reports/       DEF-001 to DEF-003
+04_Defect_Reports/       DEF-001 to DEF-004 with a summary table
 05_Test_Automation/      pytest unit/API tests and Selenium UI tests
-06_Test_Reports/         JUnit XML results, coverage output, test summary report
+06_Test_Reports/         JUnit XML for 4 runs, coverage output, test summary report
 07_Screenshots/          Selenium screenshots
 Conclusion.md
 ```

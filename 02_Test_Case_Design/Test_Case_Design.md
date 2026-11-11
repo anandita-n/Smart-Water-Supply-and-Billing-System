@@ -1,4 +1,4 @@
-# Test Case Design
+﻿# Test Case Design
 
 Test case IDs match the automated test names in `05_Test_Automation/` and the rows in
 `03_Test_Execution/test_execution_log.md`. (`TC-U` = unit, `TC-A` = API, `TC-UI` = Selenium UI.)
@@ -91,19 +91,21 @@ Slab edges are 10, 20 and 30 kL, so each edge is tested at the edge and just abo
 | TC-A35 | UNPAID past due | list bills | status shown as OVERDUE |
 
 ## 7. Security and access control (role-based)
-TC-A13 (no token), TC-A14 (garbage token), TC-A15 to TC-A17 (customer calling admin-only
+TC-A13 (no token), TC-A14 (garbage token), TC-A56 (logout revokes the token, DEF-003), TC-A57 (expired token rejected), TC-A55 and TC-A60 (usernames are case-insensitive, DEF-004), TC-A15 to TC-A17 (customer calling admin-only
 endpoints), TC-A22 and TC-A34 (data isolation between customers), TC-A46 (paying another customer's bill).
 
 ## 8. Functional and integration (API)
 TC-A02, A10 to A12 (auth), TC-A18 to A20 (connections), TC-A23, A28 (readings),
 TC-A30 to A33, A36 (bill generation), TC-A31 (amounts and due date), TC-A49 (commercial bill),
-TC-A50 (calculator).
+TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list).
 
-## 9. UI test cases (Selenium)
+## 9. UI test cases (Selenium, Microsoft Edge headless)
 | ID | Scenario | Expected |
 |---|---|---|
-| TC-UI01 | Login with a wrong password | "Invalid username or password" is shown |
-| TC-UI02 | Estimate a bill for 25 kL | "Total: 240" is shown |
+| TC-UI01 | Sign in with a wrong password | "Invalid username or password" is shown on the login screen |
+| TC-UI02 | Estimate a bill for 25 kL | "Total: ₹240.00" is shown |
 | TC-UI03 | Estimate with negative units | A validation error is shown |
-| TC-UI04 | Admin logs in | Admin panel is visible, header shows ADMIN |
-| TC-UI05 | End to end: register, admin creates connection, two readings, bill; customer logs in and pays | Bill status changes from UNPAID to PAID |
+| TC-UI04 | Admin signs in | Header shows System Administrator / admin and the Customers menu is visible |
+| TC-UI05 | End to end: register; admin creates a connection, two readings and a bill; customer signs in, opens the payment dialog (₹240.00) and pays | Bill status changes from UNPAID to PAID |
+| TC-UI06 | Sign out, then reload the page | Login screen is shown; the session is gone |
+| TC-UI07 | Customer signs in | Admin-only menu items (Customers, Meter readings) are not shown |
