@@ -6,7 +6,7 @@
 | Found by | TC-A101 (API test), run 7 |
 | Severity | Low |
 | Priority | Medium |
-| Status | **Open** |
+| Status | **Closed**: fixed and retested (run 8: TC-A101 and TC-A102 pass) |
 | Reported by | Vivan Raj Belur |
 
 ## Description
@@ -30,3 +30,10 @@ HTTP 201 Created; the customer is stored with a blank name.
 ## Root cause / proposed fix
 `RegisterIn.full_name` only has `min_length=1`, which counts spaces. Strip the value and reject it if it is
 empty after stripping, and store the stripped name.
+
+## Fix applied
+`app/main.py`: a `field_validator("full_name")` on `RegisterIn` strips the value and raises a validation error
+(HTTP 422) when nothing is left. The stripped name is what gets stored.
+
+## Retest
+TC-A101 now returns 422. TC-A102 (profile update with a blank name) still passes.
