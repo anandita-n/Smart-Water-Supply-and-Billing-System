@@ -433,14 +433,15 @@ async function renderReadings() {
     const last = rs[rs.length - 1], prev = rs[rs.length - 2];
     const billed = last && S.bills.some((b) => b.reading_id === last.id);
     const ready = rs.length >= 2 && !billed;
-    const state = !last ? "No readings yet" : rs.length === 1 ? "Starting reading saved" : billed ? "Billed" : "Ready to bill";
+    const state = !last ? "No readings yet" : rs.length === 1 ? "Starting reading saved" : billed ? "Billed, waiting for next reading" : "Ready to bill";
+    const whyDisabled = !last ? "Add the starting reading first" : rs.length === 1 ? "Add a second reading to get usage" : "Already billed. Add a new reading first";
     return `<tr>
       <td>${esc(k.meter_no)}</td><td>${custLink(k.customer_id, customerName(k.customer_id))}</td>
       <td class="num">${last ? last.reading + " kL" : "-"}</td><td>${last ? last.read_on : "-"}</td>
       <td class="num">${prev ? round2(last.reading - prev.reading) + " kL" : "-"}</td>
       <td class="rstate">${state}</td>
       <td style="white-space:nowrap"><button class="btn small add-reading-btn" data-id="${k.id}" data-meter="${esc(k.meter_no)}" type="button">Add reading</button>
-        <button class="btn small gen-btn" data-id="${k.id}" data-meter="${esc(k.meter_no)}" type="button" ${ready ? "" : "disabled"}>Generate bill</button></td></tr>`;
+        <button class="btn small gen-btn" data-id="${k.id}" data-meter="${esc(k.meter_no)}" type="button" ${ready ? "" : `disabled title="${whyDisabled}"`}>Generate bill</button></td></tr>`;
   }).join("");
   $("view").innerHTML = `<h2>Meter readings</h2>
     <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Meter</th><th>Customer</th><th class="num">Last reading</th><th>Read on</th><th class="num">Used last period</th><th>Status</th><th></th></tr></thead>
@@ -467,21 +468,35 @@ function openReadingDialog(connId) {
     <div class="row2"><div><label for="m-read">Meter shows (kL)</label><input id="m-read" type="number" min="${last ? last.reading : 0}" step="0.01" placeholder="e.g. 125"></div>
     <div><label for="m-date">Date read</label><input id="m-date" type="date" max="${todayISO()}" ${last ? `min="${last.read_on}"` : ""} value="${todayISO()}"></div></div>
     <div id="rd-msg" class="form-msg" role="alert" style="margin-top:10px"></div>`;
+  $("read-bill-btn").classList.toggle("hidden", !last);        // a bill needs a previous reading to compare with
   $("rd-modal").classList.remove("hidden");
   $("m-read").focus();
 }
 $("rd-cancel").onclick = () => $("rd-modal").classList.add("hidden");
 $("rd-modal").onclick = (e) => { if (e.target.id === "rd-modal") $("rd-modal").classList.add("hidden"); };
-$("read-btn").onclick = async () => {
+async function saveReading(andBill) {
   try {
     const value = parseFloat($("m-read").value);
     if (Number.isNaN(value)) throw new Error("Enter the meter reading");
     await api("/readings", "POST", { connection_id: readingConnId, reading: value, read_on: $("m-date").value || undefined });
+    let message = "Reading saved";
+    if (andBill) {
+      try {
+        const d = await api("/bills/generate", "POST", { connection_id: readingConnId });
+        message = `Reading saved. Bill #${d.id} generated: ${money(d.total)} for ${d.units} kL`;
+      } catch (err) {
+        $("rd-modal").classList.add("hidden");
+        toast(`Reading saved, but the bill could not be generated: ${err.message}`, "err");
+        return go("readings");
+      }
+    }
     $("rd-modal").classList.add("hidden");
-    toast("Reading saved");
+    toast(message);
     go("readings");
   } catch (err) { setMsg("rd-msg", err.message, false); }
-};
+}
+$("read-btn").onclick = () => saveReading(false);
+$("read-bill-btn").onclick = () => saveReading(true);
 
 /* ---------------- payments & receipts ---------------- */
 const METHODS = { UPI: "UPI", CARD: "Card", NETBANKING: "Net banking", CASH: "Cash" };
