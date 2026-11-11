@@ -273,3 +273,8 @@ h1, h2, .page-head h2, .hero h1, .hero h2 { font-family: "Times New Roman", Time
 .auth-card .auth-logo { display: none; }
 .wordmark, .auth-name { font-family: "Times New Roman", Times, serif; font-size: 1.15em; }
 @media (max-width: 800px) { .auth-card .auth-logo { display: flex; } }
+
+/* Times New Roman everywhere */
+body, button, input, select, textarea, .nav-item { font-family: "Times New Roman", Times, serif; }
+body { font-size: 15px; letter-spacing: 0; }
+.nav-item { font-size: 13px; letter-spacing: .5px; }
