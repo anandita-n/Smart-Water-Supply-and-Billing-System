@@ -272,3 +272,16 @@ def test_TC_A50_calculator_ok(client):
 ])
 def test_calculator_invalid_inputs(client, tc, params, code):
     assert client.get("/api/tariff/calculate", params=params).status_code == code
+
+
+# ---------------- Defects found in the second test round ----------------
+def test_TC_A55_username_is_case_insensitive(client, customer):
+    """'Alice' must not be registrable when 'alice' exists (look-alike account risk)."""
+    r = client.post("/api/auth/register", json={"username": "Alice", "password": "secret1", "full_name": "Fake Alice"})
+    assert r.status_code == 409
+
+
+def test_TC_A56_logout_invalidates_token(client, customer):
+    _, h = customer
+    assert client.post("/api/auth/logout", headers=h).status_code == 200
+    assert client.get("/api/me", headers=h).status_code == 401

@@ -1,0 +1,5 @@
+﻿05_Test_Automation\test_api.py:286: AssertionError
+=========================== short test summary info ===========================
+FAILED 05_Test_Automation/test_api.py::test_TC_A55_username_is_case_insensitive
+FAILED 05_Test_Automation/test_api.py::test_TC_A56_logout_invalidates_token
+2 failed, 84 passed, 5 deselected in 10.54s
