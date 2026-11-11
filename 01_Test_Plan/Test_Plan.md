@@ -20,10 +20,10 @@ leak/high-usage alerts. This plan describes how the system is tested.
 | M4 | Tariff & billing | Slab charges, commercial multiplier, fixed charge, bill generation, due date | Unit, API, UI |
 | M5 | Payments | Exact-amount payment, late fee, double payment, ownership | Unit, API, UI |
 | M6 | Alerts | High usage (> 100 kL) and spike (> 3x average) alerts | Unit, API |
-| M7 | Web UI | Sign in/create account, top navigation by role (admin: Dashboard, Customers, Readings, Bills, Payments, Complaints; customer: Dashboard, My bills, Payments, Complaints, Estimate), popups, profile page with three-dots menu, sign out | UI (Selenium) |
+| M7 | Web UI | Sign in/create account (HydroCore branding, light-blue wave), top navigation by role (admin: Dashboard, Customers, Readings, Bills, Payments, Complaints; customer: Dashboard, My bills, Payments, Complaints, Estimate), popups, profile page with three-dots menu, sign out | UI (Selenium) |
 | M8 | Payments & receipts | Payment record and receipt number, payment history, receipt breakdown, payment methods, access control | API, UI |
 | M9 | Account security | Login lock-out after 5 failed attempts, profile update, password change, blank-name validation | API, UI |
-| M11 | Dashboard | Landing page. Admin: outstanding, collected and billed this month, a "needs attention" list that links to the right page, recent payments. Customer: amount due with Pay now, latest bill compared with the previous one, alerts from the last 30 days only | UI |
+| M11 | Dashboard | Landing page with a greeting band and one simple bar chart (admin: billed vs collected for the last 6 months; customer: usage of the last 6 bills). Admin: outstanding, collected and billed this month, a "needs attention" list that links to the right page, recent payments. Customer: amount due with Pay now, latest bill compared with the previous one, alerts from the last 30 days only | UI |
 | M10 | Complaints | Customer files a complaint; admin moves it OPEN, IN_PROGRESS, RESOLVED with a resolution note | Unit, API, UI |
 
 ### Business rules (the test oracle)
