@@ -97,7 +97,7 @@ app/                     Application source (FastAPI backend + static UI)
 03_Test_Execution/       Execution log (run 1 vs run 2)
 04_Defect_Reports/       DEF-001 to DEF-005 with a summary table
 05_Test_Automation/      pytest unit/API tests and Selenium UI tests
-06_Test_Reports/         JUnit XML for 13 runs, coverage output, test summary report
+06_Test_Reports/         JUnit XML for 14 runs, coverage output, test summary report
 07_Screenshots/          Selenium screenshots
 Conclusion.md
 ```

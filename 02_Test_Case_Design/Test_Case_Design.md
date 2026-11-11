@@ -171,7 +171,7 @@ TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A114 to TC
 | TC-UI14 | Admin filters customers by connection type | Commercial shows only commercial customers; Domestic shows only domestic ones |
 | TC-UI15 | Admin visits Customers, Readings, Bills, Payments, Complaints | No caption line is shown under any page heading |
 | TC-UI16 | Admin opens Readings for a meter that is already billed, then adds a new reading | Generate bill is disabled while billed, enabled after the new reading |
-| TC-UI17 | Admin signs in | Dashboard is the landing page; shows a non-zero Outstanding figure, a Needs attention panel and Recent payments |
+| TC-UI17 | Admin signs in | Dashboard is the landing page; shows a non-zero Outstanding balance figure (large, with the unpaid/overdue note), a Needs attention panel and Recent payments |
 | TC-UI18 | Customer with one unpaid bill signs in, clicks Pay now on the dashboard and confirms | Amount due shows ₹240.00, the dialog total is ₹240.00, afterwards the dashboard says all paid up with ₹0.00 due |
 | TC-UI19 | Admin with an overdue bill clicks the overdue item in Needs attention | Bills page opens with the Overdue filter selected and no Unpaid rows |
 | TC-UI20 | Admin opens Readings for a meter that is already billed: Generate bill is disabled with the reason "Add a new reading first"; adds a reading with Save and generate bill | A bill is generated in one step; the meter shows as billed again and the bill appears under Bills |
