@@ -156,6 +156,22 @@ def choose(d, elem_id, value=None, index=None):
     raise AssertionError(f"could not select an option in #{elem_id}")
 
 
+def add_reading_ui(d, meter, value):
+    """Open the Add reading popup for one meter, enter a reading and save it."""
+    for _ in range(6):
+        try:
+            WebDriverWait(d, 8).until(EC.element_to_be_clickable((By.CSS_SELECTOR, f".add-reading-btn[data-meter='{meter}']"))).click()
+            break
+        except StaleElementReferenceException:
+            time.sleep(0.4)
+    wait_visible(d, "rd-modal")
+    fill(d, "m-read", value)
+    d.find_element(By.ID, "read-btn").click()
+    WebDriverWait(d, 8).until(EC.invisibility_of_element_located((By.ID, "rd-modal")))
+    text_of(d, "toast", "Reading saved")
+    time.sleep(0.6)                                    # the table re-renders after saving
+
+
 def test_TC_UI05_end_to_end_billing_and_payment(driver):
     # 1. customer registers from the Create account tab
     driver.find_element(By.ID, "tab-register").click()
@@ -178,15 +194,9 @@ def test_TC_UI05_end_to_end_billing_and_payment(driver):
     WebDriverWait(driver, 8).until(EC.invisibility_of_element_located((By.ID, "conn-modal")))
     WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "customer-rows"), "UIMTR1"))
     open_page(driver, "readings")
-    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "m-conn")))
-    choose(driver, "m-conn", index=1)
-    fill(driver, "m-read", 50)
-    driver.find_element(By.ID, "read-btn").click()
-    text_of(driver, "toast", "Reading saved")
-    fill(driver, "m-read", 75)
-    driver.find_element(By.ID, "read-btn").click()
-    time.sleep(0.6)
-    driver.find_element(By.ID, "gen-btn").click()
+    add_reading_ui(driver, "UIMTR1", 50)
+    add_reading_ui(driver, "UIMTR1", 75)
+    WebDriverWait(driver, 8).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".gen-btn[data-meter='UIMTR1']"))).click()
     assert "\u20b9240.00" in text_of(driver, "toast", "generated")
     shot(driver, "UI05a_bill_generated")
     # 3. customer signs in, sees the unpaid bill and pays it
@@ -277,6 +287,10 @@ def test_TC_UI09_complaint_raised_by_customer_and_updated_by_admin(driver, base_
     open_page(driver, "complaints")
     WebDriverWait(driver, 8).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#complaint-rows .cu-btn"))).click()
     wait_visible(driver, "cu-modal")
+    options = Select(driver.find_element(By.ID, "cu-status")).options
+    assert [o.text for o in options] == ["Open (current)", "In progress", "Resolved"]
+    assert [o.is_enabled() for o in options] == [False, True, False]
+    shot(driver, "UI09c_update_complaint")
     driver.find_element(By.ID, "cu-save").click()
     WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "complaint-rows"), "In progress"))
     shot(driver, "UI09b_admin_complaints")
@@ -287,7 +301,10 @@ def test_TC_UI10_customer_changes_password(driver, base_url):
     login(driver, "pwuser", "secret1")
     wait_visible(driver, "app")
     driver.find_element(By.ID, "who").click()
-    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "p-pass-btn")))
+    WebDriverWait(driver, 8).until(EC.element_to_be_clickable((By.ID, "p-menu-btn"))).click()
+    shot(driver, "UI10a_profile_menu")
+    driver.find_element(By.ID, "menu-password").click()
+    wait_visible(driver, "pw-modal")
     fill(driver, "p-cur", "secret1")
     fill(driver, "p-new", "newsecret9")
     fill(driver, "p-new2", "different9")
@@ -295,11 +312,25 @@ def test_TC_UI10_customer_changes_password(driver, base_url):
     assert "do not match" in text_of(driver, "p-pass-msg", "match")
     fill(driver, "p-new2", "newsecret9")
     driver.find_element(By.ID, "p-pass-btn").click()
-    assert "Password changed" in text_of(driver, "p-pass-msg", "Password changed")
-    shot(driver, "UI10_profile")
+    assert "Password changed" in text_of(driver, "toast", "Password changed")
     logout(driver)
     login(driver, "pwuser", "newsecret9")
     wait_visible(driver, "app")
+
+
+def test_TC_UI12_profile_name_is_edited_through_the_menu(driver, base_url):
+    ensure_customer(base_url, "renamer")
+    login(driver, "renamer", "secret1")
+    wait_visible(driver, "app")
+    driver.find_element(By.ID, "who").click()
+    WebDriverWait(driver, 8).until(EC.element_to_be_clickable((By.ID, "p-menu-btn"))).click()
+    driver.find_element(By.ID, "menu-name").click()
+    wait_visible(driver, "pn-modal")
+    fill(driver, "p-name", "Renamed Person")
+    driver.find_element(By.ID, "p-name-btn").click()
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "profile-name"), "Renamed Person"))
+    assert driver.find_element(By.ID, "who").text == "Renamed Person"
+    shot(driver, "UI12_profile")
 
 
 def test_TC_UI11_account_locks_after_five_failed_sign_ins(driver, base_url):
@@ -312,3 +343,66 @@ def test_TC_UI11_account_locks_after_five_failed_sign_ins(driver, base_url):
     login(driver, "lockme", "secret1")                      # even the right password is refused while locked
     time.sleep(0.6)
     assert not driver.find_element(By.ID, "app").is_displayed()
+
+
+# ---------------- customer history, type filter, captions ----------------
+def test_TC_UI13_clicking_a_customer_name_opens_their_history(driver, base_url):
+    make_billed_customer(base_url, "history1", "HISTMTR1")
+    login_as_admin(driver)
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "customer-rows"), "Billed history1"))
+    for _ in range(5):
+        try:
+            driver.find_element(By.XPATH, "//a[contains(@class,'cust-link') and text()='Billed history1']").click()
+            break
+        except StaleElementReferenceException:
+            time.sleep(0.4)
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "detail-name"), "Billed history1"))
+    assert "HISTMTR1" in driver.find_element(By.ID, "detail-pane").text or "HISTMTR1" in driver.find_element(By.ID, "view").text
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "bill-rows"), "Unpaid"))
+    driver.find_element(By.ID, "dtab-readings").click()
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "detail-pane"), "first reading"))
+    shot(driver, "UI13_customer_history")
+    driver.find_element(By.ID, "back-customers").click()
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "type-filter")))
+
+
+def test_TC_UI14_customers_can_be_filtered_by_connection_type(driver, base_url):
+    h = api_admin_headers(base_url)
+    cid = httpx.post(base_url + "/api/auth/register",
+                     json={"username": "commco", "password": "secret1", "full_name": "Commercial Co"}).json().get("id")
+    if cid:
+        httpx.post(base_url + "/api/connections", headers=h, json={
+            "customer_id": cid, "meter_no": "COMMTR9", "type": "COMMERCIAL", "address": "9 Market Road"})
+    make_billed_customer(base_url, "domestic9", "DOMMTR9")
+    login_as_admin(driver)
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "type-filter")))
+    time.sleep(0.8)
+    Select(driver.find_element(By.ID, "type-filter")).select_by_value("COMMERCIAL")
+    rows = driver.find_element(By.ID, "customer-rows").text
+    assert "Commercial Co" in rows and "Billed domestic9" not in rows
+    shot(driver, "UI14_filter_commercial")
+    Select(driver.find_element(By.ID, "type-filter")).select_by_value("DOMESTIC")
+    rows = driver.find_element(By.ID, "customer-rows").text
+    assert "Billed domestic9" in rows and "Commercial Co" not in rows
+
+
+def test_TC_UI15_pages_have_no_caption_under_the_heading(driver, base_url):
+    login_as_admin(driver)
+    for page in ("customers", "readings", "bills", "payments", "complaints"):
+        driver.find_element(By.ID, "nav-" + page).click()
+        time.sleep(0.8)
+        assert driver.find_elements(By.CSS_SELECTOR, ".lead") == [], page
+
+
+def test_TC_UI16_reading_page_enables_billing_only_when_a_new_reading_exists(driver, base_url):
+    make_billed_customer(base_url, "readcheck", "RDCHKMTR")     # has 2 readings and a bill already
+    login_as_admin(driver)
+    driver.find_element(By.ID, "nav-readings").click()
+    row_btn = WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".gen-btn[data-meter='RDCHKMTR']")))
+    time.sleep(0.5)
+    row_btn = driver.find_element(By.CSS_SELECTOR, ".gen-btn[data-meter='RDCHKMTR']")
+    assert not row_btn.is_enabled()                              # already billed: nothing new to bill
+    assert "Billed" in driver.find_element(By.ID, "reading-rows").text
+    add_reading_ui(driver, "RDCHKMTR", 60)
+    assert driver.find_element(By.CSS_SELECTOR, ".gen-btn[data-meter='RDCHKMTR']").is_enabled()   # new reading: ready to bill
+    shot(driver, "UI16_readings_table")

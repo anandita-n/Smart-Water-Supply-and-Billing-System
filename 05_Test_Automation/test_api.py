@@ -309,3 +309,28 @@ def test_TC_A59_customer_cannot_list_customers(client, customer):
 def test_TC_A60_login_works_with_any_username_case(client, customer):
     r = client.post("/api/auth/login", json={"username": "ALICE", "password": "secret1"})
     assert r.status_code == 200
+
+
+# ---------------- reading history (used by the Readings and customer history screens) ----------------
+def test_TC_A114_admin_lists_readings_in_order_with_meter_number(client, admin, connection):
+    add_reading(client, admin, connection, 100, "2026-01-01")
+    add_reading(client, admin, connection, 125, "2026-02-01")
+    rows = client.get("/api/readings", headers=admin).json()
+    assert [r["reading"] for r in rows] == [100, 125] and rows[0]["meter_no"] == "MTR001"
+
+
+def test_TC_A115_readings_can_be_filtered_by_connection(client, admin, customer, connection):
+    other = client.post("/api/connections", headers=admin, json={
+        "customer_id": customer[0], "meter_no": "MTR002", "type": "DOMESTIC", "address": "2 Lake Road"}).json()["id"]
+    add_reading(client, admin, connection, 100, "2026-01-01")
+    add_reading(client, admin, other, 7, "2026-01-01")
+    rows = client.get("/api/readings", headers=admin, params={"connection_id": other}).json()
+    assert len(rows) == 1 and rows[0]["meter_no"] == "MTR002"
+
+
+def test_TC_A116_customer_cannot_list_readings(client, customer):
+    assert client.get("/api/readings", headers=customer[1]).status_code == 403
+
+
+def test_TC_A117_readings_require_login(client):
+    assert client.get("/api/readings").status_code == 401
