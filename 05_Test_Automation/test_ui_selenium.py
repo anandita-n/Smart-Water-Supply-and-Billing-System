@@ -140,7 +140,7 @@ def test_TC_UI04_admin_login_shows_admin_menu(driver):
     assert driver.find_element(By.ID, "who").text == "System Administrator"
     assert driver.find_element(By.ID, "role-label").text.lower() == "admin"
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert menu == ["Customers", "Readings", "Bills", "Payments", "Complaints"]
+    assert menu == ["Dashboard", "Customers", "Readings", "Bills", "Payments", "Complaints"]
     shot(driver, "UI04_admin_customers")
 
 
@@ -228,7 +228,7 @@ def test_TC_UI07_customer_does_not_see_admin_menu(driver, base_url):
     assert driver.find_elements(By.ID, "nav-customers") == []
     assert driver.find_elements(By.ID, "nav-readings") == []
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert menu == ["My bills", "Payments", "Complaints", "Estimate"]
+    assert menu == ["Dashboard", "My bills", "Payments", "Complaints", "Estimate"]
     shot(driver, "UI07_customer_menu")
 
 
@@ -254,6 +254,7 @@ def test_TC_UI08_payment_creates_a_receipt(driver, base_url):
     make_billed_customer(base_url, "payer", "PAYMTR1")
     login(driver, "payer", "secret1")
     wait_visible(driver, "app")
+    open_page(driver, "bills")
     WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "bill-rows"), "Unpaid"))
     driver.find_element(By.CSS_SELECTOR, "#bill-rows .pay-btn").click()
     wait_visible(driver, "pay-modal")
@@ -349,6 +350,7 @@ def test_TC_UI11_account_locks_after_five_failed_sign_ins(driver, base_url):
 def test_TC_UI13_clicking_a_customer_name_opens_their_history(driver, base_url):
     make_billed_customer(base_url, "history1", "HISTMTR1")
     login_as_admin(driver)
+    open_page(driver, "customers")
     WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "customer-rows"), "Billed history1"))
     for _ in range(5):
         try:
@@ -375,6 +377,7 @@ def test_TC_UI14_customers_can_be_filtered_by_connection_type(driver, base_url):
             "customer_id": cid, "meter_no": "COMMTR9", "type": "COMMERCIAL", "address": "9 Market Road"})
     make_billed_customer(base_url, "domestic9", "DOMMTR9")
     login_as_admin(driver)
+    open_page(driver, "customers")
     WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "type-filter")))
     time.sleep(0.8)
     Select(driver.find_element(By.ID, "type-filter")).select_by_value("COMMERCIAL")
@@ -388,7 +391,7 @@ def test_TC_UI14_customers_can_be_filtered_by_connection_type(driver, base_url):
 
 def test_TC_UI15_pages_have_no_caption_under_the_heading(driver, base_url):
     login_as_admin(driver)
-    for page in ("customers", "readings", "bills", "payments", "complaints"):
+    for page in ("dashboard", "customers", "readings", "bills", "payments", "complaints"):
         driver.find_element(By.ID, "nav-" + page).click()
         time.sleep(0.8)
         assert driver.find_elements(By.CSS_SELECTOR, ".lead") == [], page
@@ -406,3 +409,54 @@ def test_TC_UI16_reading_page_enables_billing_only_when_a_new_reading_exists(dri
     add_reading_ui(driver, "RDCHKMTR", 60)
     assert driver.find_element(By.CSS_SELECTOR, ".gen-btn[data-meter='RDCHKMTR']").is_enabled()   # new reading: ready to bill
     shot(driver, "UI16_readings_table")
+
+
+# ---------------- dashboards ----------------
+def test_TC_UI17_admin_dashboard_is_the_landing_page_with_essentials(driver, base_url):
+    make_billed_customer(base_url, "dashadmin1", "DASHMTR1")          # leaves an unpaid bill of Rs 240
+    login_as_admin(driver)
+    nav = driver.find_element(By.ID, "nav-dashboard")
+    assert "active" in nav.get_attribute("class")                      # landing page
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "dash-outstanding")))
+    time.sleep(0.5)
+    assert driver.find_element(By.ID, "dash-outstanding").text.startswith("\u20b9")
+    assert driver.find_element(By.ID, "dash-outstanding").text != "\u20b90.00"
+    assert "Needs attention" in driver.find_element(By.ID, "view").text
+    assert "Recent payments" in driver.find_element(By.ID, "view").text
+    shot(driver, "UI17_admin_dashboard")
+
+
+def test_TC_UI18_customer_dashboard_shows_amount_due_and_pays_from_there(driver, base_url):
+    make_billed_customer(base_url, "dashcust", "DASHMTR2")
+    login(driver, "dashcust", "secret1")
+    wait_visible(driver, "app")
+    assert "active" in driver.find_element(By.ID, "nav-dashboard").get_attribute("class")
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "dash-due"), "240.00"))
+    shot(driver, "UI18a_customer_dashboard")
+    driver.find_element(By.ID, "dash-pay").click()
+    wait_visible(driver, "pay-modal")
+    assert "\u20b9240.00" in driver.find_element(By.ID, "pay-total").text
+    driver.find_element(By.ID, "confirm-ok").click()
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "view"), "all paid up"))
+    assert driver.find_element(By.ID, "dash-due").text == "₹0.00"
+    shot(driver, "UI18b_customer_all_paid")
+
+
+def test_TC_UI19_dashboard_attention_link_opens_the_overdue_bills_filter(driver, base_url):
+    # an overdue bill needs a past due date: record it through the API with old reading dates
+    h = api_admin_headers(base_url)
+    cid = httpx.post(base_url + "/api/auth/register",
+                     json={"username": "latepayer", "password": "secret1", "full_name": "Late Payer"}).json()["id"]
+    conn = httpx.post(base_url + "/api/connections", headers=h, json={
+        "customer_id": cid, "meter_no": "LATEMTR1", "type": "DOMESTIC", "address": "3 Old Street"}).json()["id"]
+    for value, day in ((10, "2026-01-01"), (30, "2026-02-01")):
+        httpx.post(base_url + "/api/readings", headers=h, json={"connection_id": conn, "reading": value, "read_on": day})
+    httpx.post(base_url + "/api/bills/generate", headers=h, json={"connection_id": conn})
+    login_as_admin(driver)
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "attention-list")))
+    time.sleep(0.5)
+    assert "overdue" in driver.find_element(By.ID, "attention-list").text
+    driver.find_element(By.CSS_SELECTOR, "#attention-list .go-link[data-filter='OVERDUE']").click()
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "bill-rows"), "Overdue"))
+    assert Select(driver.find_element(By.ID, "bill-filter")).first_selected_option.text == "Overdue"
+    assert "Unpaid" not in driver.find_element(By.ID, "bill-rows").text
