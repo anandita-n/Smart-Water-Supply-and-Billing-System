@@ -175,5 +175,5 @@ TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A114 to TC
 | TC-UI18 | Customer with one unpaid bill signs in, clicks Pay now on the dashboard and confirms | Amount due shows ₹240.00, the dialog total is ₹240.00, afterwards the dashboard says all paid up with ₹0.00 due |
 | TC-UI19 | Admin with an overdue bill clicks the overdue item in Needs attention | Bills page opens with the Overdue filter selected and no Unpaid rows |
 | TC-UI20 | Admin opens Readings for a meter that is already billed: Generate bill is disabled with the reason "Add a new reading first"; adds a reading with Save and generate bill | A bill is generated in one step; the meter shows as billed again and the bill appears under Bills |
-| TC-UI21 | Open the sign-in page, then sign in as admin | Page title and card show HydroCore, the wave is displayed; after sign-in the top bar shows HydroCore; the old name appears nowhere |
+| TC-UI21 | Open the sign-in page, then sign in as admin | Page title and card show HydroCore, a single light-blue wave layer is displayed and the card shows the HydroCore logo mark; after sign-in the top bar shows HydroCore; the old name appears nowhere |
 | TC-UI22 | Admin and then a customer with one bill open their dashboards | Greeting band shown; admin chart has 12 bars (6 months x billed and collected); customer chart has 1 bar |

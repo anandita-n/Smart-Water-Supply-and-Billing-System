@@ -19,12 +19,13 @@
 | Run 9 | Customer history page, type filter, readings table and popup, three-dots profile, captions removed; reading-list API tests and UI tests TC-UI12 to TC-UI16 | 169 | 169 | 0 |
 | Run 10 | Dashboards for admin and customer as the landing page; UI tests TC-UI17 to TC-UI19; existing UI tests adjusted to start from the dashboard | 172 | 172 | 0 |
 | Run 11 | Readings page explains why Generate bill is disabled and offers Save and generate bill; UI test TC-UI20 | 173 | 173 | 0 |
-| Run 12 | Final: renamed to HydroCore, login page with light-blue wave, greeting band and charts on the dashboards; UI tests TC-UI21 and TC-UI22 | 175 | 175 | 0 |
+| Run 12 | Renamed to HydroCore, login page with light-blue wave, greeting band and charts on the dashboards; UI tests TC-UI21 and TC-UI22 | 175 | 175 | 0 |
+| Run 13 | Final: single light-blue wave on the sign-in page, new HydroCore logo; TC-UI21 extended | 175 | 175 | 0 |
 
-Raw results: `run1_baseline.xml` to `run12_final.xml` (JUnit XML) and the `*_summary.txt` files.
+Raw results: `run1_baseline.xml` to `run13_final.xml` (JUnit XML) and the `*_summary.txt` files.
 Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
-### Final test inventory (run 12)
+### Final test inventory (run 13)
 | Level | Technique(s) | Test cases |
 |---|---|---|
 | Unit (`test_billing_unit.py`, `test_complaints.py`) | BVA, equivalence partitioning, decision table, state transition | 36 |
@@ -34,7 +35,7 @@ Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
 Parameterised tests are counted per parameter set, because each set has its own test case ID.
 
-## 2. Code coverage (pytest-cov, run 12)
+## 2. Code coverage (pytest-cov, run 13)
 | File | Statements | Missed | Coverage |
 |---|---|---|---|
 | app/billing.py | 48 | 0 | 100% |
