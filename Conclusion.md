@@ -1,7 +1,7 @@
 ﻿# Conclusion
 
 We built the Smart Water Supply and Billing System ("AquaBill": FastAPI, SQLite and a web UI) and then
-tested it as a team. The testing covered a test plan, 160 designed and executed test cases, defect reporting,
+tested it as a team. The testing covered a test plan, 169 designed and executed test cases, defect reporting,
 and two automation tools (pytest and Selenium).
 
 **What the testing showed**
@@ -13,7 +13,7 @@ and two automation tools (pytest and Selenium).
   - DEF-003: login tokens never expired and could not be revoked (no logout).
   - DEF-004: usernames were case-sensitive, so look-alike accounts could be registered.
   - DEF-005: a name made only of spaces was accepted at registration.
-- Every defect was fixed and retested. The suite went from 87/89 passing on run 1 to 160/160 on the final run.
+- Every defect was fixed and retested. The suite went from 87/89 passing on run 1 to 169/169 on the final run.
 - Statement coverage reached 98% of the `app` package.
 - Four modules were added late (payment receipts, login lock-out, complaints, profile and password change).
   Writing their tests from the rules first meant 56 of the 57 new test cases passed immediately and the one
