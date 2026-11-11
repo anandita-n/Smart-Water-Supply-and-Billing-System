@@ -53,7 +53,7 @@
       </div>
       <nav id="nav"></nav>
       <div class="user">
-        <span id="who"></span><span id="role-label" class="role"></span>
+        <button id="who" class="who-btn" type="button" title="My profile"></button><span id="role-label" class="role"></span>
         <button id="logout-btn" class="link" type="button">Sign out</button>
       </div>
     </div>
@@ -69,6 +69,42 @@
     <div class="dialog-actions">
       <button id="confirm-cancel" class="link" type="button">Cancel</button>
       <button id="confirm-ok" class="btn primary" type="button">Pay now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RECEIPT DIALOG ============ -->
+<div id="receipt-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="receipt-title">
+  <div class="dialog wide">
+    <h3 id="receipt-title">Payment receipt</h3>
+    <div id="receipt-body"></div>
+    <div class="dialog-actions">
+      <button id="receipt-close" class="link" type="button">Close</button>
+      <button id="receipt-print" class="btn primary" type="button">Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ NEW COMPLAINT DIALOG (customer) ============ -->
+<div id="cp-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cp-title">
+  <div class="dialog wide">
+    <h3 id="cp-title">New complaint</h3>
+    <div id="cp-body"></div>
+    <div class="dialog-actions">
+      <button id="cp-cancel" class="link" type="button">Cancel</button>
+      <button id="cp-save" class="btn primary" type="button">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ UPDATE COMPLAINT DIALOG (admin) ============ -->
+<div id="cu-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cu-title">
+  <div class="dialog wide">
+    <h3 id="cu-title">Update complaint</h3>
+    <div id="cu-body"></div>
+    <div class="dialog-actions">
+      <button id="cu-cancel" class="link" type="button">Cancel</button>
+      <button id="cu-save" class="btn primary" type="button">Save</button>
     </div>
   </div>
 </div>

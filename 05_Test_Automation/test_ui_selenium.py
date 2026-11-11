@@ -1,4 +1,4 @@
-﻿"""Selenium UI tests (Microsoft Edge, headless). Screenshots are saved to 07_Screenshots."""
+"""Selenium UI tests (Microsoft Edge, headless). Screenshots are saved to 07_Screenshots."""
 import os
 import re
 import socket
@@ -140,7 +140,7 @@ def test_TC_UI04_admin_login_shows_admin_menu(driver):
     assert driver.find_element(By.ID, "who").text == "System Administrator"
     assert driver.find_element(By.ID, "role-label").text.lower() == "admin"
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert menu == ["Customers", "Readings", "Bills"]
+    assert menu == ["Customers", "Readings", "Bills", "Payments", "Complaints"]
     shot(driver, "UI04_admin_customers")
 
 
@@ -218,5 +218,97 @@ def test_TC_UI07_customer_does_not_see_admin_menu(driver, base_url):
     assert driver.find_elements(By.ID, "nav-customers") == []
     assert driver.find_elements(By.ID, "nav-readings") == []
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert menu == ["My bills", "Estimate"]
+    assert menu == ["My bills", "Payments", "Complaints", "Estimate"]
     shot(driver, "UI07_customer_menu")
+
+
+# ---------------- payments, complaints, profile, lock-out ----------------
+def api_admin_headers(base_url):
+    token = httpx.post(base_url + "/api/auth/login", json={"username": "admin", "password": "admin123"}).json()["token"]
+    return {"Authorization": "Bearer " + token}
+
+
+def make_billed_customer(base_url, username, meter):
+    """Customer with one unpaid bill of Rs 240 (25 kL), created through the API."""
+    h = api_admin_headers(base_url)
+    cid = httpx.post(base_url + "/api/auth/register",
+                     json={"username": username, "password": "secret1", "full_name": "Billed " + username}).json()["id"]
+    conn = httpx.post(base_url + "/api/connections", headers=h, json={
+        "customer_id": cid, "meter_no": meter, "type": "DOMESTIC", "address": "1 Test Street"}).json()["id"]
+    for value in (10, 35):
+        httpx.post(base_url + "/api/readings", headers=h, json={"connection_id": conn, "reading": value})
+    httpx.post(base_url + "/api/bills/generate", headers=h, json={"connection_id": conn})
+
+
+def test_TC_UI08_payment_creates_a_receipt(driver, base_url):
+    make_billed_customer(base_url, "payer", "PAYMTR1")
+    login(driver, "payer", "secret1")
+    wait_visible(driver, "app")
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "bill-rows"), "Unpaid"))
+    driver.find_element(By.CSS_SELECTOR, "#bill-rows .pay-btn").click()
+    wait_visible(driver, "pay-modal")
+    Select(driver.find_element(By.ID, "pay-method")).select_by_value("CARD")
+    driver.find_element(By.ID, "confirm-ok").click()
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, "#bill-rows .status"), "Paid"))
+    open_page(driver, "payments")
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "pay-rows"), "RCP-"))
+    assert "Card" in driver.find_element(By.ID, "pay-rows").text
+    driver.find_element(By.CSS_SELECTOR, "#pay-rows .receipt-btn").click()
+    wait_visible(driver, "receipt-modal")
+    assert "\u20b9240.00" in text_of(driver, "receipt-total", "240")
+    assert "PAYMTR1" in driver.find_element(By.ID, "receipt-body").text
+    shot(driver, "UI08_receipt")
+
+
+def test_TC_UI09_complaint_raised_by_customer_and_updated_by_admin(driver, base_url):
+    ensure_customer(base_url, "complainer")
+    login(driver, "complainer", "secret1")
+    wait_visible(driver, "app")
+    open_page(driver, "complaints")
+    WebDriverWait(driver, 8).until(EC.element_to_be_clickable((By.ID, "new-complaint-btn"))).click()
+    wait_visible(driver, "cp-modal")
+    Select(driver.find_element(By.ID, "cp-cat")).select_by_value("LEAK")
+    fill(driver, "cp-desc", "Water is leaking from the pipe outside our gate.")
+    shot(driver, "UI09a_new_complaint")
+    driver.find_element(By.ID, "cp-save").click()
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "complaint-rows"), "Open"))
+    logout(driver)
+    login_as_admin(driver)
+    open_page(driver, "complaints")
+    WebDriverWait(driver, 8).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#complaint-rows .cu-btn"))).click()
+    wait_visible(driver, "cu-modal")
+    driver.find_element(By.ID, "cu-save").click()
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "complaint-rows"), "In progress"))
+    shot(driver, "UI09b_admin_complaints")
+
+
+def test_TC_UI10_customer_changes_password(driver, base_url):
+    ensure_customer(base_url, "pwuser")
+    login(driver, "pwuser", "secret1")
+    wait_visible(driver, "app")
+    driver.find_element(By.ID, "who").click()
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "p-pass-btn")))
+    fill(driver, "p-cur", "secret1")
+    fill(driver, "p-new", "newsecret9")
+    fill(driver, "p-new2", "different9")
+    driver.find_element(By.ID, "p-pass-btn").click()
+    assert "do not match" in text_of(driver, "p-pass-msg", "match")
+    fill(driver, "p-new2", "newsecret9")
+    driver.find_element(By.ID, "p-pass-btn").click()
+    assert "Password changed" in text_of(driver, "p-pass-msg", "Password changed")
+    shot(driver, "UI10_profile")
+    logout(driver)
+    login(driver, "pwuser", "newsecret9")
+    wait_visible(driver, "app")
+
+
+def test_TC_UI11_account_locks_after_five_failed_sign_ins(driver, base_url):
+    ensure_customer(base_url, "lockme")
+    for _ in range(5):
+        login(driver, "lockme", "wrong-password")
+        time.sleep(0.5)
+    assert "locked" in text_of(driver, "auth-msg", "locked").lower()
+    shot(driver, "UI11_account_locked")
+    login(driver, "lockme", "secret1")                      # even the right password is refused while locked
+    time.sleep(0.6)
+    assert not driver.find_element(By.ID, "app").is_displayed()

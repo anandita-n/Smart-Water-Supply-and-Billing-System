@@ -39,10 +39,10 @@ def main():
     with TestClient(app) as c:
         admin = {"Authorization": "Bearer " + c.post("/api/auth/login", json={"username": "admin", "password": "admin123"}).json()["token"]}
         existing = {u["username"] for u in c.get("/api/customers", headers=admin).json()}
-        if existing & {x[0] for x in CUSTOMERS}:
-            print("Demo customers already exist - nothing to do.")
-            return
-        for idx, (user, name, ctype, meter, addr, usage) in enumerate(CUSTOMERS):
+        already = bool(existing & {x[0] for x in CUSTOMERS})
+        if already:
+            print("Demo customers already exist - skipping customers and bills.")
+        for idx, (user, name, ctype, meter, addr, usage) in enumerate([] if already else CUSTOMERS):
             cid = c.post("/api/auth/register", json={"username": user, "password": PASSWORD, "full_name": name}).json()["id"]
             conn = c.post("/api/connections", headers=admin, json={"customer_id": cid, "meter_no": meter, "type": ctype, "address": addr}).json()["id"]
             reading = OPENING[idx]
@@ -62,8 +62,38 @@ def main():
                     r = c.post(f"/api/bills/{bill['id']}/pay", headers=admin,
                                json={"amount": round(bill["total"] + fee, 2), "paid_on": pay_on.isoformat()})
                     assert r.status_code == 200, r.text
+        seed_complaints(c, admin)
         bills = c.get("/api/bills", headers=admin).json()
-        print(f"Seeded {len(CUSTOMERS)} customers and {len(bills)} bills. Customer password: {PASSWORD}")
+        print(f"Customers: {len(CUSTOMERS)}, bills: {len(bills)}, complaints: {len(c.get('/api/complaints', headers=admin).json())}."
+              f" Customer password: {PASSWORD}")
+
+
+# username, category, description, what the admin has done: None / "IN_PROGRESS" / resolution note
+COMPLAINTS = [
+    ("karthik", "LEAK", "Water keeps running even when all taps are closed. Possible leak after the meter.", "IN_PROGRESS"),
+    ("rohan", "BILLING", "My October bill looks higher than my usual usage. Please check the reading.", None),
+    ("meera", "NO_SUPPLY", "No water supply in our lane since the morning.", "Valve repaired at the street junction. Supply restored."),
+    ("anandita", "OTHER", "Please update the contact details on my connection.", None),
+]
+
+
+def seed_complaints(c, admin):
+    if c.get("/api/complaints", headers=admin).json():
+        return                                            # already has complaints
+    for user, category, text, action in COMPLAINTS:
+        token = c.post("/api/auth/login", json={"username": user, "password": PASSWORD}).json().get("token")
+        if not token:
+            continue                                      # demo customer missing or password changed
+        h = {"Authorization": "Bearer " + token}
+        conn = next(iter(c.get("/api/connections", headers=h).json()), None)
+        body = {"category": category, "description": text}
+        if conn:
+            body["connection_id"] = conn["id"]
+        cid = c.post("/api/complaints", headers=h, json=body).json()["id"]
+        if action:
+            c.patch(f"/api/complaints/{cid}", headers=admin, json={"status": "IN_PROGRESS"})
+        if action and action != "IN_PROGRESS":
+            c.patch(f"/api/complaints/{cid}", headers=admin, json={"status": "RESOLVED", "resolution": action})
 
 
 if __name__ == "__main__":

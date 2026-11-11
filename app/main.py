@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from . import billing
 from . import complaints as cmp
@@ -70,6 +70,14 @@ class RegisterIn(BaseModel):
     username: str = Field(min_length=3, max_length=30, pattern=r"^[A-Za-z0-9_]+$")
     password: str = Field(min_length=6, max_length=64)
     full_name: str = Field(min_length=1, max_length=80)
+
+    @field_validator("full_name")
+    @classmethod
+    def _name_not_blank(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Full name cannot be blank")
+        return v
 
 
 class LoginIn(BaseModel):

@@ -97,8 +97,8 @@ $("logout-btn").onclick = async () => {
 /* ---------------- navigation (only what the system needs) ---------------- */
 function buildNav() {
   const items = S.role === "ADMIN"
-    ? [["customers", "Customers"], ["readings", "Readings"], ["bills", "Bills"]]
-    : [["bills", "My bills"], ["estimator", "Estimate"]];
+    ? [["customers", "Customers"], ["readings", "Readings"], ["bills", "Bills"], ["payments", "Payments"], ["complaints", "Complaints"]]
+    : [["bills", "My bills"], ["payments", "Payments"], ["complaints", "Complaints"], ["estimator", "Estimate"]];
   $("nav").innerHTML = items.map(([id, label]) => `<button class="nav-item" id="nav-${id}" data-page="${id}" type="button">${label}</button>`).join("");
   $("nav").querySelectorAll(".nav-item").forEach((b) => (b.onclick = () => go(b.dataset.page)));
 }
@@ -108,7 +108,8 @@ async function go(page) {
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.page === page));
   try {
     await loadData();
-    ({ customers: renderCustomers, readings: renderReadings, bills: renderBills, estimator: renderEstimator })[page]();
+    await ({ customers: renderCustomers, readings: renderReadings, bills: renderBills, estimator: renderEstimator,
+             payments: renderPayments, complaints: renderComplaints, profile: renderProfile })[page]();
   } catch (err) { $("view").innerHTML = `<p>${esc(err.message)}</p>`; }
 }
 
@@ -172,7 +173,9 @@ function openPay(id) {
       <tr><td>Water charge</td><td>${money(b.water_charge)}</td></tr>
       <tr><td>Fixed charge</td><td>${money(b.fixed_charge)}</td></tr>
       <tr><td>Late fee${fee ? " (due " + b.due_date + ")" : ""}</td><td>${money(fee)}</td></tr>
-      <tr class="total"><td>Total</td><td id="pay-total">${money(amountDue(b))}</td></tr></table>`;
+      <tr class="total"><td>Total</td><td id="pay-total">${money(amountDue(b))}</td></tr></table>
+    <label for="pay-method">Payment method</label>
+    <select id="pay-method"><option value="UPI">UPI</option><option value="CARD">Debit / credit card</option><option value="NETBANKING">Net banking</option></select>`;
   $("pay-modal").classList.remove("hidden");
 }
 function closePay() { $("pay-modal").classList.add("hidden"); payingId = null; }
@@ -182,8 +185,8 @@ $("confirm-ok").onclick = async () => {
   const b = S.bills.find((x) => x.id === payingId);
   if (!b) return;
   try {
-    await api(`/bills/${b.id}/pay`, "POST", { amount: amountDue(b) });
-    toast("Payment received for bill #" + b.id);
+    await api(`/bills/${b.id}/pay`, "POST", { amount: amountDue(b), method: $("pay-method").value });
+    toast("Payment received for bill #" + b.id + ". Receipt available under Payments.");
     closePay();
     go(S.page);
   } catch (err) { toast(err.message, "err"); }
@@ -276,6 +279,161 @@ function renderReadings() {
       const d = await api("/bills/generate", "POST", { connection_id: connId() });
       toast(`Bill #${d.id} generated: ${money(d.total)} for ${d.units} kL`);
     } catch (err) { toast(err.message, "err"); }
+  };
+}
+
+/* ---------------- payments & receipts ---------------- */
+const METHODS = { UPI: "UPI", CARD: "Card", NETBANKING: "Net banking", CASH: "Cash" };
+let PAYMENTS = [];
+
+async function renderPayments() {
+  const admin = S.role === "ADMIN";
+  PAYMENTS = await api("/payments");
+  const total = round2(PAYMENTS.reduce((s, p) => s + p.amount, 0));
+  const fees = round2(PAYMENTS.reduce((s, p) => s + p.late_fee, 0));
+  const rows = PAYMENTS.map((p) => `<tr>
+      <td>${p.receipt_no}</td><td>${p.paid_on}</td><td>#${p.bill_id}</td>${admin ? `<td>${esc(p.customer_name)}</td>` : ""}
+      <td>${esc(p.meter_no)}</td><td>${METHODS[p.method] || p.method}</td>
+      <td class="num">${money(p.late_fee)}</td><td class="num">${money(p.amount)}</td>
+      <td><button class="btn small receipt-btn" data-id="${p.id}" type="button">Receipt</button></td></tr>`).join("");
+  $("view").innerHTML = `<h2>Payments</h2>
+    <p class="lead">${admin ? "All payments received." : "Your payment history. Open a receipt to view or print it."}</p>
+    <div class="summary"><div><span class="k">Payments</span><span class="v">${PAYMENTS.length}</span></div>
+      <div><span class="k">${admin ? "Total collected" : "Total paid"}</span><span class="v">${money(total)}</span></div>
+      <div><span class="k">Late fees</span><span class="v">${money(fees)}</span></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Receipt</th><th>Date</th><th>Bill</th>${admin ? "<th>Customer</th>" : ""}<th>Meter</th><th>Method</th><th class="num">Late fee</th><th class="num">Amount</th><th></th></tr></thead>
+      <tbody id="pay-rows">${rows || emptyRow(admin ? 9 : 8, "No payments yet.")}</tbody></table></div>`;
+  document.querySelectorAll(".receipt-btn").forEach((b) => (b.onclick = () => openReceipt(+b.dataset.id)));
+}
+
+async function openReceipt(id) {
+  try {
+    const r = await api("/payments/" + id);
+    $("receipt-body").innerHTML = `<div class="receipt-head"><strong>AquaBill - Water Supply &amp; Billing</strong>
+      <span class="receipt-no">Receipt ${r.receipt_no} &middot; ${r.paid_on}</span></div>
+      <table class="kv"><tr><td>Customer</td><td>${esc(r.customer_name)}</td></tr>
+        <tr><td>Meter</td><td>${esc(r.meter_no)} (${r.connection_type[0] + r.connection_type.slice(1).toLowerCase()})</td></tr>
+        <tr><td>Address</td><td>${esc(r.address)}</td></tr>
+        <tr><td>Bill</td><td>#${r.bill_id}, ${r.bill_date}, ${r.units} kL</td></tr>
+        <tr><td>Payment method</td><td>${METHODS[r.method] || r.method}</td></tr></table>
+      <table class="breakdown"><tr><td>Water charge</td><td>${money(r.water_charge)}</td></tr>
+        <tr><td>Fixed charge</td><td>${money(r.fixed_charge)}</td></tr>
+        <tr><td>Late fee</td><td>${money(r.late_fee)}</td></tr>
+        <tr class="total"><td>Amount paid</td><td id="receipt-total">${money(r.amount)}</td></tr></table>`;
+    $("receipt-modal").classList.remove("hidden");
+  } catch (err) { toast(err.message, "err"); }
+}
+$("receipt-close").onclick = () => $("receipt-modal").classList.add("hidden");
+$("receipt-print").onclick = () => window.print();
+$("receipt-modal").onclick = (e) => { if (e.target.id === "receipt-modal") $("receipt-modal").classList.add("hidden"); };
+
+/* ---------------- complaints ---------------- */
+const CATEGORY = { LEAK: "Leak", BILLING: "Billing", NO_SUPPLY: "No supply", OTHER: "Other" };
+const CSTATUS = { OPEN: "Open", IN_PROGRESS: "In progress", RESOLVED: "Resolved" };
+const NEXT = { OPEN: ["IN_PROGRESS"], IN_PROGRESS: ["RESOLVED"], RESOLVED: [] };
+const cstatus = (s) => `<span class="status s-${s}">${CSTATUS[s]}</span>`;
+let COMPLAINTS = [];
+
+async function renderComplaints() {
+  const admin = S.role === "ADMIN";
+  COMPLAINTS = await api("/complaints");
+  const open = COMPLAINTS.filter((c) => c.status !== "RESOLVED").length;
+  const rows = COMPLAINTS.map((c) => `<tr>
+      <td>#${c.id}</td><td style="white-space:nowrap">${c.created_on}</td>${admin ? `<td>${esc(c.customer_name)}</td>` : ""}
+      <td style="white-space:nowrap">${CATEGORY[c.category]}</td><td style="white-space:nowrap">${c.meter_no ? esc(c.meter_no) : '<span class="muted">-</span>'}</td>
+      <td class="cell-text">${esc(c.description)}</td><td class="cst">${cstatus(c.status)}</td>
+      <td class="cell-text">${c.resolution ? esc(c.resolution) : '<span class="muted">-</span>'}</td>
+      ${admin ? `<td>${NEXT[c.status].length ? `<button class="btn small cu-btn" data-id="${c.id}" type="button">Update</button>` : ""}</td>` : ""}</tr>`).join("");
+  $("view").innerHTML = `<div class="page-head"><div><h2>Complaints</h2>
+      <p class="lead">${admin ? "Complaints raised by customers." : "Report a leak, a billing problem or a supply issue."}</p></div>
+      ${admin ? "" : '<button id="new-complaint-btn" class="btn primary" type="button">New complaint</button>'}</div>
+    <div class="summary"><div><span class="k">Total</span><span class="v">${COMPLAINTS.length}</span></div>
+      <div><span class="k">Open or in progress</span><span class="v">${open}</span></div>
+      <div><span class="k">Resolved</span><span class="v">${COMPLAINTS.length - open}</span></div></div>
+    <div class="table-wrap"><table><thead><tr><th>ID</th><th>Date</th>${admin ? "<th>Customer</th>" : ""}<th>Type</th><th>Meter</th><th>Description</th><th>Status</th><th>Resolution</th>${admin ? "<th></th>" : ""}</tr></thead>
+      <tbody id="complaint-rows">${rows || emptyRow(admin ? 9 : 8, "No complaints.")}</tbody></table></div>`;
+  if (admin) document.querySelectorAll(".cu-btn").forEach((b) => (b.onclick = () => openUpdateComplaint(+b.dataset.id)));
+  else $("new-complaint-btn").onclick = openNewComplaint;
+}
+
+function openNewComplaint() {
+  $("cp-body").innerHTML = `
+    <div class="row2"><div><label for="cp-cat">Type</label><select id="cp-cat">${Object.entries(CATEGORY).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></div>
+    <div><label for="cp-conn">Connection</label><select id="cp-conn"><option value="">Not about a specific meter</option>${S.connections.map((c) => `<option value="${c.id}">${esc(c.meter_no)}</option>`).join("")}</select></div></div>
+    <label for="cp-desc">Describe the problem (10 to 500 characters)</label><textarea id="cp-desc" maxlength="500" placeholder="What is happening, and since when?"></textarea>
+    <div id="cp-msg" class="form-msg" role="alert"></div>`;
+  $("cp-modal").classList.remove("hidden");
+  $("cp-desc").focus();
+}
+$("cp-cancel").onclick = () => $("cp-modal").classList.add("hidden");
+$("cp-modal").onclick = (e) => { if (e.target.id === "cp-modal") $("cp-modal").classList.add("hidden"); };
+$("cp-save").onclick = async () => {
+  try {
+    const body = { category: $("cp-cat").value, description: $("cp-desc").value.trim() };
+    if ($("cp-conn").value) body.connection_id = +$("cp-conn").value;
+    await api("/complaints", "POST", body);
+    $("cp-modal").classList.add("hidden");
+    toast("Complaint submitted");
+    go("complaints");
+  } catch (err) { setMsg("cp-msg", err.message, false); }
+};
+
+let updatingId = null;
+function openUpdateComplaint(id) {
+  const c = COMPLAINTS.find((x) => x.id === id);
+  if (!c) return;
+  updatingId = id;
+  $("cu-body").innerHTML = `<p class="muted" style="margin:0">#${c.id} from ${esc(c.customer_name)}: ${esc(c.description)}</p>
+    <label for="cu-status">Move to</label><select id="cu-status">${NEXT[c.status].map((s) => `<option value="${s}">${CSTATUS[s]}</option>`).join("")}</select>
+    <label for="cu-res">Resolution note (required when resolving)</label><textarea id="cu-res" maxlength="500" placeholder="What was done?"></textarea>
+    <div id="cu-msg" class="form-msg" role="alert"></div>`;
+  $("cu-modal").classList.remove("hidden");
+}
+$("cu-cancel").onclick = () => $("cu-modal").classList.add("hidden");
+$("cu-modal").onclick = (e) => { if (e.target.id === "cu-modal") $("cu-modal").classList.add("hidden"); };
+$("cu-save").onclick = async () => {
+  try {
+    await api("/complaints/" + updatingId, "PATCH", { status: $("cu-status").value, resolution: $("cu-res").value.trim() || undefined });
+    $("cu-modal").classList.add("hidden");
+    toast("Complaint updated");
+    go("complaints");
+  } catch (err) { setMsg("cu-msg", err.message, false); }
+};
+
+/* ---------------- profile & password ---------------- */
+$("who").onclick = () => go("profile");
+
+async function renderProfile() {
+  document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
+  const me = await api("/me");
+  $("view").innerHTML = `<h2>My profile</h2><p class="lead">Your account details and password.</p>
+    <table class="kv"><tr><td>Username</td><td id="p-username">${esc(me.username)}</td></tr>
+      <tr><td>Role</td><td>${me.role[0] + me.role.slice(1).toLowerCase()}</td></tr></table>
+    <div class="section"><h3>Name</h3>
+      <label for="p-name">Full name</label><input id="p-name" value="${esc(me.full_name)}" maxlength="80">
+      <button id="p-name-btn" class="btn primary" style="margin-top:14px" type="button">Save name</button>
+      <div id="p-msg" class="form-msg" role="status"></div></div>
+    <div class="section"><h3>Change password</h3>
+      <label for="p-cur">Current password</label><input id="p-cur" type="password" autocomplete="current-password">
+      <label for="p-new">New password (at least 6 characters)</label><input id="p-new" type="password" autocomplete="new-password">
+      <label for="p-new2">Confirm new password</label><input id="p-new2" type="password" autocomplete="new-password">
+      <button id="p-pass-btn" class="btn primary" style="margin-top:14px" type="button">Change password</button>
+      <div id="p-pass-msg" class="form-msg" role="status"></div></div>`;
+  $("p-name-btn").onclick = async () => {
+    try {
+      const d = await api("/me", "PUT", { full_name: $("p-name").value });
+      S.name = d.full_name; $("who").textContent = d.full_name;
+      try { sessionStorage.setItem("aqua", JSON.stringify({ token: S.token, role: S.role, name: S.name, userId: S.userId })); } catch (e) {}
+      setMsg("p-msg", "Name updated.", true);
+    } catch (err) { setMsg("p-msg", err.message, false); }
+  };
+  $("p-pass-btn").onclick = async () => {
+    if ($("p-new").value !== $("p-new2").value) return setMsg("p-pass-msg", "The new passwords do not match.", false);
+    try {
+      await api("/me/password", "POST", { current_password: $("p-cur").value, new_password: $("p-new").value });
+      ["p-cur", "p-new", "p-new2"].forEach((id) => ($(id).value = ""));
+      setMsg("p-pass-msg", "Password changed. Other devices have been signed out.", true);
+    } catch (err) { setMsg("p-pass-msg", err.message, false); }
   };
 }
 
