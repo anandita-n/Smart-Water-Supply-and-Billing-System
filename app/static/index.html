@@ -3,84 +3,72 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AquaBill | Smart Water Supply and Billing</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z' fill='%230e8fb3'/%3E%3C/svg%3E">
+<title>AquaBill</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z' fill='%231558b0'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<!-- ============ LOGIN / REGISTER ============ -->
+<!-- ============ SIGN IN / CREATE ACCOUNT ============ -->
 <div id="auth-screen" class="auth-screen">
-  <div class="auth-brand">
-    <div class="logo"><svg viewBox="0 0 64 64" width="44" height="44"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#fff"/></svg>
-      <span>AquaBill</span></div>
-    <h1>Smart water supply<br>and billing, made simple.</h1>
-    <ul class="feature-list">
-      <li>Track your monthly water usage</li>
-      <li>See clear, slab-by-slab bills</li>
-      <li>Pay online and avoid late fees</li>
-      <li>Get alerts about unusual usage and leaks</li>
-    </ul>
-  </div>
-  <div class="auth-panel">
-    <div class="auth-card">
-      <div class="tabs">
-        <button id="tab-login" class="tab active" type="button">Sign in</button>
-        <button id="tab-register" class="tab" type="button">Create account</button>
-      </div>
-
-      <form id="login-form" autocomplete="on">
-        <h2>Welcome back</h2>
-        <p class="muted">Sign in to view your bills and usage.</p>
-        <label for="l-user">Username</label>
-        <input id="l-user" autocomplete="username" placeholder="e.g. ravi">
-        <label for="l-pass">Password</label>
-        <input id="l-pass" type="password" autocomplete="current-password" placeholder="Your password">
-        <button id="login-btn" class="btn btn-primary btn-block" type="submit">Sign in</button>
-      </form>
-
-      <form id="register-form" class="hidden">
-        <h2>Create your account</h2>
-        <p class="muted">Customer accounts are linked to a connection by the utility office.</p>
-        <label for="r-name">Full name</label>
-        <input id="r-name" placeholder="e.g. Ravi Kumar">
-        <label for="r-user">Username</label>
-        <input id="r-user" placeholder="3-30 letters, numbers or _">
-        <label for="r-pass">Password</label>
-        <input id="r-pass" type="password" placeholder="At least 6 characters">
-        <button id="register-btn" class="btn btn-primary btn-block" type="submit">Create account</button>
-      </form>
-      <div id="auth-msg" class="form-msg" role="alert"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#1558b0"/></svg>
     </div>
+
+    <form id="login-form" autocomplete="on" novalidate>
+      <h1>Sign in</h1>
+      <p class="sub">to continue to AquaBill</p>
+      <input id="l-user" aria-label="Username" autocomplete="username" placeholder="Username">
+      <input id="l-pass" type="password" aria-label="Password" autocomplete="current-password" placeholder="Password">
+      <div id="auth-msg" class="form-msg" role="alert"></div>
+      <div class="auth-actions">
+        <button id="tab-register" class="link" type="button">Create account</button>
+        <button id="login-btn" class="btn primary" type="submit">Sign in</button>
+      </div>
+    </form>
+
+    <form id="register-form" class="hidden" novalidate>
+      <h1>Create account</h1>
+      <p class="sub">for AquaBill customers</p>
+      <input id="r-name" aria-label="Full name" placeholder="Full name">
+      <input id="r-user" aria-label="Username" placeholder="Username (3-30 letters, numbers or _)">
+      <input id="r-pass" type="password" aria-label="Password" placeholder="Password (at least 6 characters)">
+      <div id="reg-msg" class="form-msg" role="alert"></div>
+      <div class="auth-actions">
+        <button id="tab-login" class="link" type="button">Sign in instead</button>
+        <button id="register-btn" class="btn primary" type="submit">Create</button>
+      </div>
+    </form>
   </div>
 </div>
 
 <!-- ============ APPLICATION ============ -->
-<div id="app" class="app hidden">
-  <aside class="sidebar">
-    <div class="logo small"><svg viewBox="0 0 64 64" width="28" height="28"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#fff"/></svg><span>AquaBill</span></div>
-    <nav id="nav"></nav>
-    <div class="user-chip">
-      <div class="avatar" id="avatar">?</div>
-      <div class="user-meta"><strong id="who">-</strong><small id="role-label">-</small></div>
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <svg viewBox="0 0 64 64" width="22" height="22" aria-hidden="true"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#1558b0"/></svg>
+        <span>AquaBill</span>
+      </div>
+      <nav id="nav"></nav>
+      <div class="user">
+        <span id="who"></span><span id="role-label" class="role"></span>
+        <button id="logout-btn" class="link" type="button">Sign out</button>
+      </div>
     </div>
-    <button id="logout-btn" class="btn btn-ghost btn-block" type="button">Sign out</button>
-  </aside>
-
-  <main class="main">
-    <header class="topbar"><h2 id="page-title">Dashboard</h2><span id="today" class="muted"></span></header>
-    <div id="view" class="view"></div>
-  </main>
+  </header>
+  <main id="view" class="page"></main>
 </div>
 
 <!-- ============ PAYMENT DIALOG ============ -->
 <div id="pay-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pay-title">
-  <div class="modal-card">
-    <h3 id="pay-title">Confirm payment</h3>
+  <div class="dialog">
+    <h3 id="pay-title">Pay bill</h3>
     <div id="pay-body"></div>
-    <div class="modal-actions">
-      <button id="confirm-cancel" class="btn btn-ghost" type="button">Cancel</button>
-      <button id="confirm-ok" class="btn btn-primary" type="button">Pay now</button>
+    <div class="dialog-actions">
+      <button id="confirm-cancel" class="link" type="button">Cancel</button>
+      <button id="confirm-ok" class="btn primary" type="button">Pay now</button>
     </div>
   </div>
 </div>
