@@ -106,6 +106,6 @@ TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A61 and TC
 | TC-UI02 | Customer opens Estimate and enters 25 kL | "Total: ₹240.00" is shown |
 | TC-UI03 | Customer estimates with negative units | A validation error is shown |
 | TC-UI04 | Admin signs in | Header shows System Administrator / admin; the menu is exactly Customers, Readings, Bills |
-| TC-UI05 | End to end: register; admin creates a connection, two readings and a bill; customer signs in, opens the payment dialog (₹240.00) and pays | Bill status changes from UNPAID to PAID |
+| TC-UI05 | End to end: register; admin opens the New connection popup and creates a connection, adds two readings and a bill; customer signs in, opens the payment dialog (₹240.00) and pays | Bill status changes from UNPAID to PAID |
 | TC-UI06 | Sign out, then reload the page | Login screen is shown; the session is gone |
 | TC-UI07 | Customer signs in | The menu is exactly My bills, Estimate; admin items are not shown |

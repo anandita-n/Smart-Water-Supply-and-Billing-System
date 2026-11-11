@@ -33,6 +33,10 @@ A water utility system with:
 |---|---|
 | ![Sign in](07_Screenshots/Demo01_sign_in.png) | ![Customer bills](07_Screenshots/Demo05_customer_bills.png) |
 
+| Admin: customers + New connection popup | |
+|---|---|
+| ![Popup](07_Screenshots/Demo07_new_connection_popup.png) | |
+
 | Admin: all bills | Payment dialog |
 |---|---|
 | ![Admin bills](07_Screenshots/Demo03_admin_bills.png) | ![Payment](07_Screenshots/Demo06_payment_dialog.png) |

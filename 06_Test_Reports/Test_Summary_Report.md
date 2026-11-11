@@ -1,4 +1,4 @@
-# Test Execution Summary Report
+﻿# Test Execution Summary Report
 
 **Application:** Smart Water Supply and Billing System ("AquaBill") v1.0.0
 **Testers:** S Anandita Narayan (1MS23IS105), Vivan Raj Belur (1MS23IS152)
@@ -12,12 +12,13 @@
 | Run 2 | After fixing DEF-001 and DEF-002 | 89 | 89 | 0 |
 | Run 3 | New tests TC-A55 and TC-A56 added; UI tests not run | 86 | 84 | 2 |
 | Run 4 | After fixing DEF-003 and DEF-004, the first UI redesign and rewritten UI tests | 97 | 97 | 0 |
-| Run 5 | Final: minimal sign-in page, top navigation, seed data (TC-A61, TC-A62), updated UI tests | 99 | 99 | 0 |
+| Run 5 | Minimal sign-in page, top navigation, seed data (TC-A61, TC-A62), updated UI tests | 99 | 99 | 0 |
+| Run 6 | Final: New connection popup, light-blue top bar, UI test updated | 99 | 99 | 0 |
 
-Raw results: `run1_baseline.xml` to `run5_ui_redesign.xml` (JUnit XML) and the `*_summary.txt` files.
+Raw results: `run1_baseline.xml` to `run6_final.xml` (JUnit XML) and the `*_summary.txt` files.
 Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
-### Final test inventory (run 5)
+### Final test inventory (run 6)
 | Level | Technique(s) | Test cases |
 |---|---|---|
 | Unit (`test_billing_unit.py`) | BVA, equivalence partitioning, decision table, state transition | 30 |
@@ -25,7 +26,7 @@ Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 | UI (`test_ui_selenium.py`) | Scenario-based, end to end | 7 |
 | **Total** | | **99** |
 
-## 2. Code coverage (pytest-cov, run 5)
+## 2. Code coverage (pytest-cov, run 6)
 | File | Statements | Missed | Coverage |
 |---|---|---|---|
 | app/billing.py | 48 | 0 | 100% |
