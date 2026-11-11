@@ -4,21 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HydroCore</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z' fill='%231558b0'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Cdefs%3E%3CclipPath%20id='c'%3E%3Cpath%20d='M32%203C23%2014%2011%2026%2011%2040a21%2021%200%200%200%2042%200C53%2026%2041%2014%2032%203z'/%3E%3C/clipPath%3E%3C/defs%3E%3Cpath%20d='M32%203C23%2014%2011%2026%2011%2040a21%2021%200%200%200%2042%200C53%2026%2041%2014%2032%203z'%20fill='%231558b0'/%3E%3Cg%20clip-path='url%28%23c%29'%20fill='none'%20stroke='%23fff'%20stroke-linecap='round'%20stroke-width='3.2'%3E%3Cpath%20d='M8%2038c6-5%2012-5%2018%200s12%205%2018%200%2012-5%2018%200'/%3E%3Cpath%20d='M8%2048c6-5%2012-5%2018%200s12%205%2018%200%2012-5%2018%200'%20opacity='.55'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="drop-clip"><path d="M32 3C23 14 11 26 11 40a21 21 0 0 0 42 0C53 26 41 14 32 3z"/></clipPath>
+    <symbol id="hc-logo" viewBox="0 0 64 64">
+      <path d="M32 3C23 14 11 26 11 40a21 21 0 0 0 42 0C53 26 41 14 32 3z" fill="#1558b0"/>
+      <g clip-path="url(#drop-clip)" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="3.2">
+        <path d="M8 38c6-5 12-5 18 0s12 5 18 0 12-5 18 0"/>
+        <path d="M8 48c6-5 12-5 18 0s12 5 18 0 12-5 18 0" opacity=".55"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
 
 <!-- ============ SIGN IN / CREATE ACCOUNT ============ -->
 <div id="auth-screen" class="auth-screen">
   <svg class="auth-wave" viewBox="0 0 1440 340" preserveAspectRatio="none" aria-hidden="true">
-    <path fill="#e3f0fb" d="M0,0H1440V250C1210,330 1010,170 760,225C520,278 290,345 0,250Z"/>
     <path fill="#c4def5" d="M0,0H1440V200C1230,280 1030,120 780,172C540,222 300,300 0,205Z"/>
   </svg>
   <div class="auth-card">
     <div class="auth-logo">
-      <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#1558b0"/></svg>
-      <div class="auth-name">HydroCore</div>
+      <svg class="logo-mark" viewBox="0 0 64 64" width="58" height="58" aria-hidden="true"><use href="#hc-logo"/></svg>
+      <div class="auth-name wordmark">Hydro<b>Core</b></div>
     </div>
 
     <form id="login-form" autocomplete="on" novalidate>
@@ -53,8 +64,8 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
-        <svg viewBox="0 0 64 64" width="22" height="22" aria-hidden="true"><path d="M32 4C20 20 12 29 12 40a20 20 0 0 0 40 0C52 29 44 20 32 4z" fill="#1558b0"/></svg>
-        <span>HydroCore</span>
+        <svg class="logo-mark" viewBox="0 0 64 64" width="28" height="28" aria-hidden="true"><use href="#hc-logo"/></svg>
+        <span class="wordmark">Hydro<b>Core</b></span>
       </div>
       <nav id="nav"></nav>
       <div class="user">
