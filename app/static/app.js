@@ -209,11 +209,16 @@ async function adminDashboard() {
   const months = lastMonths(6);
   const billedSeries = months.map((m) => round2(S.bills.filter((b) => b.bill_date.startsWith(m.key)).reduce((s, b) => s + b.total, 0)));
   const collectedSeries = months.map((m) => round2(payments.filter((p) => p.paid_on.startsWith(m.key)).reduce((s, p) => s + p.amount, 0)));
+  const unpaidCount = S.bills.filter((b) => b.status !== "PAID").length;
   $("view").innerHTML = `${hero()}
-    <div class="summary">
-      <div><span class="k">Outstanding</span><span class="v" id="dash-outstanding">${money(outstanding)}</span></div>
-      <div><span class="k">Collected this month</span><span class="v">${money(collected)}</span></div>
-      <div><span class="k">Water billed this month</span><span class="v">${billedKl} kL</span></div></div>
+    <div class="statement">
+      <div class="balance"><span class="k">Outstanding balance</span>
+        <span class="figure" id="dash-outstanding">${money(outstanding)}</span>
+        <span class="note">${unpaidCount} unpaid ${plural(unpaidCount, "bill", "bills")}${overdue ? `, ${overdue} overdue. ${goLink("bills", "Review overdue bills", "OVERDUE")}` : ""}</span></div>
+      <dl class="facts">
+        <div><dt>Collected this month</dt><dd>${money(collected)}</dd></div>
+        <div><dt>Water billed this month</dt><dd>${billedKl} kL</dd></div>
+      </dl></div>
     <div class="panel chart-panel"><h3>Billed and collected, last 6 months
         <span class="legend"><i style="background:#9ec9ee"></i>Billed<i style="background:#1558b0"></i>Collected</span></h3>
       <div class="chart" id="dash-chart">${barChart(months.map((m) => m.label), [{ name: "Billed", color: "#9ec9ee", values: billedSeries }, { name: "Collected", color: "#1558b0", values: collectedSeries }])}</div></div>

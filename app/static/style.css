@@ -185,3 +185,19 @@ table.plain tr:last-child td { border-bottom: 0; }
 .wordmark { font-weight: 700; color: #0f2f4d; letter-spacing: .2px; }
 .wordmark b { font-weight: 700; color: #1558b0; }
 .brand { gap: 8px; font-size: 19px; }
+
+/* ---------- figures without boxes (statement style, as on utility account pages) ---------- */
+.summary { display: flex; flex-wrap: wrap; gap: 8px 48px; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; margin: 16px 0 20px; padding: 0 0 16px; }
+.summary > div { flex: none; min-width: 0; padding: 0; border: 0; }
+.summary .k { font-size: 13px; }
+.summary .v { font-size: 22px; font-weight: 600; }
+.statement { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px 72px; padding: 4px 2px 22px; border-bottom: 1px solid var(--line); margin-bottom: 22px; }
+.balance .k { display: block; color: var(--muted); font-size: 13px; }
+.balance .figure { display: block; font-size: 40px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.balance .note { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.balance .note .link { padding: 0; font-size: 13px; }
+.facts { margin: 0; min-width: 300px; }
+.facts div { display: flex; justify-content: space-between; gap: 40px; padding: 7px 0; border-bottom: 1px dotted #cfd3d7; }
+.facts div:last-child { border-bottom: 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
