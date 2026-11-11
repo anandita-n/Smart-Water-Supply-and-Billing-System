@@ -6,7 +6,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const round2 = (n) => Math.round(n * 100) / 100;
 
-const S = { token: null, role: null, name: "", userId: null, connections: [], customers: [], bills: [], alerts: [], page: null, billFilter: "ALL" };
+const S = { token: null, role: null, name: "", userId: null, connections: [], customers: [], bills: [], alerts: [], page: null, billFilter: "ALL",
+  custType: "ALL", custQ: "", viewCustomerId: null, detailTab: "bills" };
 
 /* ---------------- helpers ---------------- */
 async function api(path, method = "GET", body) {
@@ -105,10 +106,11 @@ function buildNav() {
 
 async function go(page) {
   S.page = page;
-  document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.page === page));
+  const navPage = page === "customer" ? "customers" : page;          // a customer's history belongs under Customers
+  document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.page === navPage));
   try {
     await loadData();
-    await ({ customers: renderCustomers, readings: renderReadings, bills: renderBills, estimator: renderEstimator,
+    await ({ customers: renderCustomers, customer: renderCustomerDetail, readings: renderReadings, bills: renderBills, estimator: renderEstimator,
              payments: renderPayments, complaints: renderComplaints, profile: renderProfile })[page]();
   } catch (err) { $("view").innerHTML = `<p>${esc(err.message)}</p>`; }
 }
@@ -144,21 +146,21 @@ function renderBills() {
 
   const list = (S.billFilter === "ALL" ? S.bills : S.bills.filter((b) => b.status === S.billFilter)).slice().reverse();
   const rows = list.map((b) => `<tr>
-      <td>#${b.id}</td>${admin ? `<td>${esc(connOwner(b.connection_id))}</td>` : ""}<td>${esc(connLabel(b.connection_id))}</td>
+      <td>#${b.id}</td>${admin ? `<td>${custLink(connOwnerId(b.connection_id), connOwner(b.connection_id))}</td>` : ""}<td>${esc(connLabel(b.connection_id))}</td>
       <td>${b.bill_date}</td><td class="num">${b.units} kL</td>
       <td class="num">${money(b.status === "PAID" ? b.total + b.late_fee : b.total)}</td><td>${b.due_date}</td>
       <td class="st">${status(b.status)}</td>
       <td>${!admin && b.status !== "PAID" ? `<button class="btn small pay-btn" data-id="${b.id}" type="button">Pay</button>` : ""}</td></tr>`).join("");
 
   $("view").innerHTML = `<h2>${admin ? "Bills" : "My bills"}</h2>
-    <p class="lead">${admin ? "All bills issued to customers." : "Your water bills. Pay within 15 days of the bill date to avoid a late fee."}</p>
-    ${notice}<div class="summary">${summary}</div>
+    ${notice}<div class="summary" style="margin-top:14px">${summary}</div>
     <div class="toolbar"><label for="bill-filter" style="margin:0">Show</label>
       <select id="bill-filter">${["ALL", "UNPAID", "OVERDUE", "PAID"].map((s) => `<option value="${s}" ${S.billFilter === s ? "selected" : ""}>${s === "ALL" ? "All" : s[0] + s.slice(1).toLowerCase()}</option>`).join("")}</select></div>
     <div class="table-wrap"><table><thead><tr><th>Bill</th>${admin ? "<th>Customer</th>" : ""}<th>Meter</th><th>Date</th><th class="num">Usage</th><th class="num">Amount</th><th>Due</th><th>Status</th><th></th></tr></thead>
       <tbody id="bill-rows">${rows || emptyRow(admin ? 9 : 8, "No bills to show.")}</tbody></table></div>`;
   $("bill-filter").onchange = (e) => { S.billFilter = e.target.value; renderBills(); };
   document.querySelectorAll(".pay-btn").forEach((b) => (b.onclick = () => openPay(+b.dataset.id)));
+  bindCustLinks();
 }
 
 /* ---------------- payment dialog ---------------- */
@@ -195,8 +197,7 @@ $("confirm-ok").onclick = async () => {
 /* ---------------- estimator (customer) ---------------- */
 function renderEstimator() {
   $("view").innerHTML = `<h2>Estimate a bill</h2>
-    <p class="lead">Check what a month's usage would cost.</p>
-    <div class="form-box">
+    <div class="form-box" style="margin-top:14px">
       <div class="row2"><div><label for="c-units">Water used (kL)</label><input id="c-units" type="number" min="0" step="0.01" placeholder="e.g. 25"></div>
       <div><label for="c-type">Connection type</label><select id="c-type"><option>DOMESTIC</option><option>COMMERCIAL</option></select></div></div>
       <button id="calc-btn" class="btn primary" style="margin-top:16px" type="button">Calculate</button>
@@ -217,21 +218,100 @@ function renderEstimator() {
 }
 
 /* ---------------- admin: customers ---------------- */
-function renderCustomers() {
-  const rows = S.customers.map((c) => {
+function customerRows() {
+  const q = S.custQ.trim().toLowerCase();
+  const list = S.customers.filter((c) => {
     const conns = S.connections.filter((k) => k.customer_id === c.id);
-    return `<tr><td>${c.id}</td><td>${esc(c.full_name)}</td><td>${esc(c.username)}</td>
+    if (S.custType !== "ALL" && !conns.some((k) => k.type === S.custType)) return false;
+    if (!q) return true;
+    return [c.full_name, c.username, ...conns.map((k) => k.meter_no)].some((s) => s.toLowerCase().includes(q));
+  });
+  const rows = list.map((c) => {
+    const conns = S.connections.filter((k) => k.customer_id === c.id && (S.custType === "ALL" || k.type === S.custType));
+    return `<tr><td>${c.id}</td><td>${custLink(c.id, c.full_name)}</td><td>${esc(c.username)}</td>
       <td>${conns.map((k) => esc(k.meter_no)).join(", ") || '<span class="muted">-</span>'}</td>
-      <td>${conns.map((k) => k.type[0] + k.type.slice(1).toLowerCase()).join(", ") || ""}</td>
+      <td>${conns.map((k) => k.type[0] + k.type.slice(1).toLowerCase()).join(", ")}</td>
       <td>${conns.map((k) => esc(k.address)).join("; ")}</td></tr>`;
   }).join("");
-  $("view").innerHTML = `<div class="page-head"><div><h2>Customers</h2>
-    <p class="lead">Registered customers and their water connections.</p></div>
-    <button id="new-conn-btn" class="btn primary" type="button">New connection</button></div>
-    <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Meter</th><th>Type</th><th>Address</th></tr></thead>
-      <tbody id="customer-rows">${rows || emptyRow(6, "No customers yet.")}</tbody></table></div>`;
-  $("new-conn-btn").onclick = openConnDialog;
+  return rows || emptyRow(6, "No customers match.");
 }
+
+function renderCustomers() {
+  $("view").innerHTML = `<div class="page-head"><h2>Customers</h2>
+    <button id="new-conn-btn" class="btn primary" type="button">New connection</button></div>
+    <div class="toolbar" style="margin-top:14px"><label for="type-filter" style="margin:0">Type</label>
+      <select id="type-filter"><option value="ALL">All types</option><option value="DOMESTIC">Domestic</option><option value="COMMERCIAL">Commercial</option></select>
+      <input id="cust-search" type="search" placeholder="Search name, username or meter" style="max-width:260px;padding:6px 10px" value="${esc(S.custQ)}"></div>
+    <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Meter</th><th>Type</th><th>Address</th></tr></thead>
+      <tbody id="customer-rows">${customerRows()}</tbody></table></div>`;
+  $("type-filter").value = S.custType;
+  const refresh = () => { $("customer-rows").innerHTML = customerRows(); bindCustLinks(); };
+  $("type-filter").onchange = (e) => { S.custType = e.target.value; refresh(); };
+  $("cust-search").oninput = (e) => { S.custQ = e.target.value; refresh(); };
+  $("new-conn-btn").onclick = openConnDialog;
+  bindCustLinks();
+}
+
+/* ---------------- admin: one customer's history ---------------- */
+function custLink(id, name) {
+  return S.role === "ADMIN" ? `<a href="#" class="cust-link" data-cid="${id}">${esc(name)}</a>` : esc(name);
+}
+function bindCustLinks() {
+  document.querySelectorAll(".cust-link").forEach((a) => (a.onclick = (e) => { e.preventDefault(); S.viewCustomerId = +a.dataset.cid; S.detailTab = "bills"; go("customer"); }));
+}
+const connOwnerId = (connId) => { const c = S.connections.find((x) => x.id === connId); return c ? c.customer_id : null; };
+
+async function renderCustomerDetail() {
+  const id = S.viewCustomerId;
+  const cust = S.customers.find((c) => c.id === id);
+  if (!cust) return go("customers");
+  const [payments, complaints, readings] = await Promise.all([api("/payments"), api("/complaints"), api("/readings")]);
+  const conns = S.connections.filter((k) => k.customer_id === id);
+  const ids = new Set(conns.map((k) => k.id));
+  const bills = S.bills.filter((b) => ids.has(b.connection_id));
+  const pays = payments.filter((p) => p.customer_id === id);
+  const comps = complaints.filter((c) => c.customer_id === id);
+  const reads = readings.filter((r) => ids.has(r.connection_id));
+  PAYMENTS = pays;
+
+  const open = bills.filter((b) => b.status !== "PAID");
+  const outstanding = round2(open.reduce((s, b) => s + amountDue(b), 0));
+  const paidTotal = round2(pays.reduce((s, p) => s + p.amount, 0));
+
+  const panes = {
+    bills: `<div class="table-wrap"><table><thead><tr><th>Bill</th><th>Meter</th><th>Date</th><th class="num">Usage</th><th class="num">Amount</th><th>Due</th><th>Status</th></tr></thead><tbody id="bill-rows">${
+      bills.slice().reverse().map((b) => `<tr><td>#${b.id}</td><td>${esc(connLabel(b.connection_id))}</td><td>${b.bill_date}</td><td class="num">${b.units} kL</td>
+        <td class="num">${money(b.status === "PAID" ? b.total + b.late_fee : b.total)}</td><td>${b.due_date}</td><td>${status(b.status)}</td></tr>`).join("") || emptyRow(7, "No bills yet.")}</tbody></table></div>`,
+    payments: `<div class="table-wrap"><table><thead><tr><th>Receipt</th><th>Date</th><th>Bill</th><th>Method</th><th class="num">Late fee</th><th class="num">Amount</th><th></th></tr></thead><tbody>${
+      pays.map((p) => `<tr><td>${p.receipt_no}</td><td>${p.paid_on}</td><td>#${p.bill_id}</td><td>${METHODS[p.method] || p.method}</td><td class="num">${money(p.late_fee)}</td><td class="num">${money(p.amount)}</td>
+        <td><button class="btn small receipt-btn" data-id="${p.id}" type="button">Receipt</button></td></tr>`).join("") || emptyRow(7, "No payments yet.")}</tbody></table></div>`,
+    complaints: `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Date</th><th>Type</th><th>Description</th><th>Status</th><th>Resolution</th></tr></thead><tbody>${
+      comps.map((c) => `<tr><td>#${c.id}</td><td style="white-space:nowrap">${c.created_on}</td><td>${CATEGORY[c.category]}</td><td class="cell-text">${esc(c.description)}</td><td>${cstatus(c.status)}</td>
+        <td class="cell-text">${c.resolution ? esc(c.resolution) : '<span class="muted">-</span>'}</td></tr>`).join("") || emptyRow(6, "No complaints.")}</tbody></table></div>`,
+    readings: `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Meter</th><th class="num">Reading (kL)</th><th class="num">Used since previous</th></tr></thead><tbody>${
+      reads.map((r, i) => {
+        const prev = reads.slice(0, i).reverse().find((x) => x.connection_id === r.connection_id);
+        return `<tr><td>${r.read_on}</td><td>${esc(r.meter_no)}</td><td class="num">${r.reading}</td><td class="num">${prev ? round2(r.reading - prev.reading) + " kL" : '<span class="muted">first reading</span>'}</td></tr>`;
+      }).reverse().join("") || emptyRow(4, "No readings yet.")}</tbody></table></div>`,
+  };
+  const tabs = [["bills", "Bills", bills.length], ["payments", "Payments", pays.length], ["complaints", "Complaints", comps.length], ["readings", "Meter readings", reads.length]];
+
+  $("view").innerHTML = `<a href="#" id="back-customers" class="back-link">&lsaquo; Customers</a>
+    <div class="id-head"><div class="avatar-sq">${esc(initials(cust.full_name))}</div>
+      <div><h2 id="detail-name">${esc(cust.full_name)}</h2><div class="meta">@${esc(cust.username)} &middot; Customer ID ${cust.id}</div></div></div>
+    <div class="summary"><div><span class="k">Amount due</span><span class="v">${money(outstanding)}</span></div>
+      <div><span class="k">Total paid</span><span class="v">${money(paidTotal)}</span></div>
+      <div><span class="k">Overdue bills</span><span class="v">${bills.filter((b) => b.status === "OVERDUE").length}</span></div>
+      <div><span class="k">Open complaints</span><span class="v">${comps.filter((c) => c.status !== "RESOLVED").length}</span></div></div>
+    <div class="info-card"><h3>Connections</h3>${conns.length ? `<div class="table-wrap" style="border:0"><table><thead><tr><th>Meter</th><th>Type</th><th>Address</th></tr></thead><tbody>${
+      conns.map((k) => `<tr><td>${esc(k.meter_no)}</td><td>${k.type[0] + k.type.slice(1).toLowerCase()}</td><td>${esc(k.address)}</td></tr>`).join("")}</tbody></table></div>` : '<span class="muted">No connection yet.</span>'}</div>
+    <div class="tabs" id="detail-tabs">${tabs.map(([k, label, n]) => `<button class="tab-btn ${S.detailTab === k ? "active" : ""}" data-tab="${k}" id="dtab-${k}" type="button">${label}<span class="count">${n}</span></button>`).join("")}</div>
+    <div id="detail-pane">${panes[S.detailTab]}</div>`;
+  $("back-customers").onclick = (e) => { e.preventDefault(); go("customers"); };
+  document.querySelectorAll(".tab-btn").forEach((b) => (b.onclick = () => { S.detailTab = b.dataset.tab; renderCustomerDetail(); }));
+  document.querySelectorAll(".receipt-btn").forEach((b) => (b.onclick = () => openReceipt(+b.dataset.id)));
+}
+const initials = (name) => name.replace(/\(.*?\)/g, "").trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
 /* "New connection" popup */
 function openConnDialog() {
@@ -257,30 +337,66 @@ $("conn-btn").onclick = async () => {
 };
 
 /* ---------------- admin: readings ---------------- */
-function renderReadings() {
+let READINGS = [];
+let readingConnId = null;
+
+/* One row per connection: shows where it stands, and what the admin can do next. */
+async function renderReadings() {
+  READINGS = await api("/readings");
+  const rows = S.connections.map((k) => {
+    const rs = READINGS.filter((r) => r.connection_id === k.id);
+    const last = rs[rs.length - 1], prev = rs[rs.length - 2];
+    const billed = last && S.bills.some((b) => b.reading_id === last.id);
+    const ready = rs.length >= 2 && !billed;
+    const state = !last ? "No readings yet" : rs.length === 1 ? "Starting reading saved" : billed ? "Billed" : "Ready to bill";
+    return `<tr>
+      <td>${esc(k.meter_no)}</td><td>${custLink(k.customer_id, customerName(k.customer_id))}</td>
+      <td class="num">${last ? last.reading + " kL" : "-"}</td><td>${last ? last.read_on : "-"}</td>
+      <td class="num">${prev ? round2(last.reading - prev.reading) + " kL" : "-"}</td>
+      <td class="rstate">${state}</td>
+      <td style="white-space:nowrap"><button class="btn small add-reading-btn" data-id="${k.id}" data-meter="${esc(k.meter_no)}" type="button">Add reading</button>
+        <button class="btn small gen-btn" data-id="${k.id}" data-meter="${esc(k.meter_no)}" type="button" ${ready ? "" : "disabled"}>Generate bill</button></td></tr>`;
+  }).join("");
   $("view").innerHTML = `<h2>Meter readings</h2>
-    <p class="lead">Enter the latest reading, then generate the bill from the last two readings.</p>
-    <div class="form-box">
-      <label for="m-conn">Connection</label>
-      <select id="m-conn"><option value="">Select connection</option>${S.connections.map((c) => `<option value="${c.id}">${esc(c.meter_no)} - ${esc(customerName(c.customer_id))}</option>`).join("")}</select>
-      <div class="row2"><div><label for="m-read">Reading (kL)</label><input id="m-read" type="number" min="0" step="0.01" placeholder="e.g. 125"></div>
-      <div><label for="m-date">Date</label><input id="m-date" type="date" max="${todayISO()}" value="${todayISO()}"></div></div>
-      <div style="display:flex;gap:10px;margin-top:16px"><button id="read-btn" class="btn primary" type="button">Save reading</button>
-      <button id="gen-btn" class="btn" type="button">Generate bill</button></div></div>`;
-  const connId = () => { const v = $("m-conn").value; if (!v) throw new Error("Select a connection first"); return +v; };
-  $("read-btn").onclick = async () => {
+    <div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Meter</th><th>Customer</th><th class="num">Last reading</th><th>Read on</th><th class="num">Used last period</th><th>Status</th><th></th></tr></thead>
+      <tbody id="reading-rows">${rows || emptyRow(7, "No connections yet. Add one from the Customers page.")}</tbody></table></div>`;
+  bindCustLinks();
+  document.querySelectorAll(".add-reading-btn").forEach((b) => (b.onclick = () => openReadingDialog(+b.dataset.id)));
+  document.querySelectorAll(".gen-btn").forEach((b) => (b.onclick = async () => {
     try {
-      await api("/readings", "POST", { connection_id: connId(), reading: parseFloat($("m-read").value), read_on: $("m-date").value || undefined });
-      toast("Reading saved"); $("m-read").value = "";
-    } catch (err) { toast(err.message, "err"); }
-  };
-  $("gen-btn").onclick = async () => {
-    try {
-      const d = await api("/bills/generate", "POST", { connection_id: connId() });
+      const d = await api("/bills/generate", "POST", { connection_id: +b.dataset.id });
       toast(`Bill #${d.id} generated: ${money(d.total)} for ${d.units} kL`);
+      go("readings");
     } catch (err) { toast(err.message, "err"); }
-  };
+  }));
 }
+
+function openReadingDialog(connId) {
+  readingConnId = connId;
+  const k = S.connections.find((x) => x.id === connId);
+  const rs = READINGS.filter((r) => r.connection_id === connId);
+  const last = rs[rs.length - 1];
+  $("rd-body").innerHTML = `<p style="margin:0"><strong>${esc(k.meter_no)}</strong> &middot; ${esc(customerName(k.customer_id))}</p>
+    <p class="muted hint">${last ? `Previous reading: ${last.reading} kL on ${last.read_on}.` : "No readings yet. This first reading is the starting point; the bill is generated from the next one."}
+      Enter the number now shown on the meter. Usage = this reading minus the previous one.</p>
+    <div class="row2"><div><label for="m-read">Meter shows (kL)</label><input id="m-read" type="number" min="${last ? last.reading : 0}" step="0.01" placeholder="e.g. 125"></div>
+    <div><label for="m-date">Date read</label><input id="m-date" type="date" max="${todayISO()}" ${last ? `min="${last.read_on}"` : ""} value="${todayISO()}"></div></div>
+    <div id="rd-msg" class="form-msg" role="alert" style="margin-top:10px"></div>`;
+  $("rd-modal").classList.remove("hidden");
+  $("m-read").focus();
+}
+$("rd-cancel").onclick = () => $("rd-modal").classList.add("hidden");
+$("rd-modal").onclick = (e) => { if (e.target.id === "rd-modal") $("rd-modal").classList.add("hidden"); };
+$("read-btn").onclick = async () => {
+  try {
+    const value = parseFloat($("m-read").value);
+    if (Number.isNaN(value)) throw new Error("Enter the meter reading");
+    await api("/readings", "POST", { connection_id: readingConnId, reading: value, read_on: $("m-date").value || undefined });
+    $("rd-modal").classList.add("hidden");
+    toast("Reading saved");
+    go("readings");
+  } catch (err) { setMsg("rd-msg", err.message, false); }
+};
 
 /* ---------------- payments & receipts ---------------- */
 const METHODS = { UPI: "UPI", CARD: "Card", NETBANKING: "Net banking", CASH: "Cash" };
@@ -292,18 +408,18 @@ async function renderPayments() {
   const total = round2(PAYMENTS.reduce((s, p) => s + p.amount, 0));
   const fees = round2(PAYMENTS.reduce((s, p) => s + p.late_fee, 0));
   const rows = PAYMENTS.map((p) => `<tr>
-      <td>${p.receipt_no}</td><td>${p.paid_on}</td><td>#${p.bill_id}</td>${admin ? `<td>${esc(p.customer_name)}</td>` : ""}
+      <td>${p.receipt_no}</td><td>${p.paid_on}</td><td>#${p.bill_id}</td>${admin ? `<td>${custLink(p.customer_id, p.customer_name)}</td>` : ""}
       <td>${esc(p.meter_no)}</td><td>${METHODS[p.method] || p.method}</td>
       <td class="num">${money(p.late_fee)}</td><td class="num">${money(p.amount)}</td>
       <td><button class="btn small receipt-btn" data-id="${p.id}" type="button">Receipt</button></td></tr>`).join("");
   $("view").innerHTML = `<h2>Payments</h2>
-    <p class="lead">${admin ? "All payments received." : "Your payment history. Open a receipt to view or print it."}</p>
-    <div class="summary"><div><span class="k">Payments</span><span class="v">${PAYMENTS.length}</span></div>
+    <div class="summary" style="margin-top:14px"><div><span class="k">Payments</span><span class="v">${PAYMENTS.length}</span></div>
       <div><span class="k">${admin ? "Total collected" : "Total paid"}</span><span class="v">${money(total)}</span></div>
       <div><span class="k">Late fees</span><span class="v">${money(fees)}</span></div></div>
     <div class="table-wrap"><table><thead><tr><th>Receipt</th><th>Date</th><th>Bill</th>${admin ? "<th>Customer</th>" : ""}<th>Meter</th><th>Method</th><th class="num">Late fee</th><th class="num">Amount</th><th></th></tr></thead>
       <tbody id="pay-rows">${rows || emptyRow(admin ? 9 : 8, "No payments yet.")}</tbody></table></div>`;
   document.querySelectorAll(".receipt-btn").forEach((b) => (b.onclick = () => openReceipt(+b.dataset.id)));
+  bindCustLinks();
 }
 
 async function openReceipt(id) {
@@ -339,21 +455,21 @@ async function renderComplaints() {
   COMPLAINTS = await api("/complaints");
   const open = COMPLAINTS.filter((c) => c.status !== "RESOLVED").length;
   const rows = COMPLAINTS.map((c) => `<tr>
-      <td>#${c.id}</td><td style="white-space:nowrap">${c.created_on}</td>${admin ? `<td>${esc(c.customer_name)}</td>` : ""}
+      <td>#${c.id}</td><td style="white-space:nowrap">${c.created_on}</td>${admin ? `<td>${custLink(c.customer_id, c.customer_name)}</td>` : ""}
       <td style="white-space:nowrap">${CATEGORY[c.category]}</td><td style="white-space:nowrap">${c.meter_no ? esc(c.meter_no) : '<span class="muted">-</span>'}</td>
       <td class="cell-text">${esc(c.description)}</td><td class="cst">${cstatus(c.status)}</td>
       <td class="cell-text">${c.resolution ? esc(c.resolution) : '<span class="muted">-</span>'}</td>
       ${admin ? `<td>${NEXT[c.status].length ? `<button class="btn small cu-btn" data-id="${c.id}" type="button">Update</button>` : ""}</td>` : ""}</tr>`).join("");
-  $("view").innerHTML = `<div class="page-head"><div><h2>Complaints</h2>
-      <p class="lead">${admin ? "Complaints raised by customers." : "Report a leak, a billing problem or a supply issue."}</p></div>
+  $("view").innerHTML = `<div class="page-head"><h2>Complaints</h2>
       ${admin ? "" : '<button id="new-complaint-btn" class="btn primary" type="button">New complaint</button>'}</div>
-    <div class="summary"><div><span class="k">Total</span><span class="v">${COMPLAINTS.length}</span></div>
+    <div class="summary" style="margin-top:14px"><div><span class="k">Total</span><span class="v">${COMPLAINTS.length}</span></div>
       <div><span class="k">Open or in progress</span><span class="v">${open}</span></div>
       <div><span class="k">Resolved</span><span class="v">${COMPLAINTS.length - open}</span></div></div>
     <div class="table-wrap"><table><thead><tr><th>ID</th><th>Date</th>${admin ? "<th>Customer</th>" : ""}<th>Type</th><th>Meter</th><th>Description</th><th>Status</th><th>Resolution</th>${admin ? "<th></th>" : ""}</tr></thead>
       <tbody id="complaint-rows">${rows || emptyRow(admin ? 9 : 8, "No complaints.")}</tbody></table></div>`;
   if (admin) document.querySelectorAll(".cu-btn").forEach((b) => (b.onclick = () => openUpdateComplaint(+b.dataset.id)));
   else $("new-complaint-btn").onclick = openNewComplaint;
+  bindCustLinks();
 }
 
 function openNewComplaint() {
@@ -384,7 +500,12 @@ function openUpdateComplaint(id) {
   if (!c) return;
   updatingId = id;
   $("cu-body").innerHTML = `<p class="muted" style="margin:0">#${c.id} from ${esc(c.customer_name)}: ${esc(c.description)}</p>
-    <label for="cu-status">Move to</label><select id="cu-status">${NEXT[c.status].map((s) => `<option value="${s}">${CSTATUS[s]}</option>`).join("")}</select>
+    <label for="cu-status">Status</label>
+    <select id="cu-status">${Object.keys(CSTATUS).map((s) => {
+      const allowed = NEXT[c.status].includes(s);
+      return `<option value="${s}" ${allowed ? "" : "disabled"} ${s === NEXT[c.status][0] ? "selected" : ""}>${CSTATUS[s]}${s === c.status ? " (current)" : ""}</option>`;
+    }).join("")}</select>
+    <p class="muted hint">A complaint moves one step at a time: Open, then In progress, then Resolved.</p>
     <label for="cu-res">Resolution note (required when resolving)</label><textarea id="cu-res" maxlength="500" placeholder="What was done?"></textarea>
     <div id="cu-msg" class="form-msg" role="alert"></div>`;
   $("cu-modal").classList.remove("hidden");
@@ -400,42 +521,79 @@ $("cu-save").onclick = async () => {
   } catch (err) { setMsg("cu-msg", err.message, false); }
 };
 
-/* ---------------- profile & password ---------------- */
+/* ---------------- profile (centered, edit through the three-dots menu) ---------------- */
 $("who").onclick = () => go("profile");
 
 async function renderProfile() {
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
   const me = await api("/me");
-  $("view").innerHTML = `<h2>My profile</h2><p class="lead">Your account details and password.</p>
-    <table class="kv"><tr><td>Username</td><td id="p-username">${esc(me.username)}</td></tr>
-      <tr><td>Role</td><td>${me.role[0] + me.role.slice(1).toLowerCase()}</td></tr></table>
-    <div class="section"><h3>Name</h3>
-      <label for="p-name">Full name</label><input id="p-name" value="${esc(me.full_name)}" maxlength="80">
-      <button id="p-name-btn" class="btn primary" style="margin-top:14px" type="button">Save name</button>
-      <div id="p-msg" class="form-msg" role="status"></div></div>
-    <div class="section"><h3>Change password</h3>
-      <label for="p-cur">Current password</label><input id="p-cur" type="password" autocomplete="current-password">
-      <label for="p-new">New password (at least 6 characters)</label><input id="p-new" type="password" autocomplete="new-password">
-      <label for="p-new2">Confirm new password</label><input id="p-new2" type="password" autocomplete="new-password">
-      <button id="p-pass-btn" class="btn primary" style="margin-top:14px" type="button">Change password</button>
-      <div id="p-pass-msg" class="form-msg" role="status"></div></div>`;
-  $("p-name-btn").onclick = async () => {
-    try {
-      const d = await api("/me", "PUT", { full_name: $("p-name").value });
-      S.name = d.full_name; $("who").textContent = d.full_name;
-      try { sessionStorage.setItem("aqua", JSON.stringify({ token: S.token, role: S.role, name: S.name, userId: S.userId })); } catch (e) {}
-      setMsg("p-msg", "Name updated.", true);
-    } catch (err) { setMsg("p-msg", err.message, false); }
-  };
-  $("p-pass-btn").onclick = async () => {
-    if ($("p-new").value !== $("p-new2").value) return setMsg("p-pass-msg", "The new passwords do not match.", false);
-    try {
-      await api("/me/password", "POST", { current_password: $("p-cur").value, new_password: $("p-new").value });
-      ["p-cur", "p-new", "p-new2"].forEach((id) => ($(id).value = ""));
-      setMsg("p-pass-msg", "Password changed. Other devices have been signed out.", true);
-    } catch (err) { setMsg("p-pass-msg", err.message, false); }
-  };
+  const mine = S.connections.filter((k) => k.customer_id === me.id);
+  $("view").innerHTML = `<div class="profile">
+    <div class="profile-head">
+      <div class="avatar-sq">${esc(initials(me.full_name))}</div>
+      <div><h2 id="profile-name">${esc(me.full_name)}</h2><div class="muted">@${esc(me.username)}</div>
+        <div style="margin-top:8px"><span class="role">${me.role.toLowerCase()}</span></div></div>
+      <button id="p-menu-btn" class="kebab" type="button" aria-label="Edit profile" aria-haspopup="true">&#8942;</button>
+      <div id="p-menu" class="menu hidden">
+        <button id="menu-name" type="button">Edit name</button>
+        <button id="menu-password" type="button">Change password</button>
+      </div>
+    </div>
+    <div class="info-card"><h3>Account information</h3>
+      <div class="info-grid">
+        <div><span class="k">Full name</span><span class="v">${esc(me.full_name)}</span></div>
+        <div><span class="k">Username</span><span class="v" id="p-username">${esc(me.username)}</span></div>
+        <div><span class="k">Role</span><span class="v">${me.role[0] + me.role.slice(1).toLowerCase()}</span></div>
+        <div><span class="k">${me.role === "ADMIN" ? "Staff ID" : "Customer ID"}</span><span class="v">${me.id}</span></div>
+      </div></div>
+    ${me.role === "CUSTOMER" ? `<div class="info-card"><h3>My connections</h3>${mine.length ? `<div class="table-wrap" style="border:0"><table><thead><tr><th>Meter</th><th>Type</th><th>Address</th></tr></thead><tbody>${
+      mine.map((k) => `<tr><td>${esc(k.meter_no)}</td><td>${k.type[0] + k.type.slice(1).toLowerCase()}</td><td>${esc(k.address)}</td></tr>`).join("")}</tbody></table></div>` : '<span class="muted">No connection has been set up for you yet.</span>'}</div>` : ""}
+  </div>`;
+  const menu = $("p-menu");
+  $("p-menu-btn").onclick = (e) => { e.stopPropagation(); menu.classList.toggle("hidden"); };
+  document.addEventListener("click", () => menu.classList.add("hidden"), { once: true });
+  $("menu-name").onclick = () => openNameDialog(me);
+  $("menu-password").onclick = openPasswordDialog;
 }
+
+function openNameDialog(me) {
+  $("pn-body").innerHTML = `<label for="p-name">Full name</label><input id="p-name" value="${esc(me.full_name)}" maxlength="80">
+    <div id="p-msg" class="form-msg" role="alert" style="margin-top:10px"></div>`;
+  $("pn-modal").classList.remove("hidden");
+  $("p-name").focus();
+}
+$("pn-cancel").onclick = () => $("pn-modal").classList.add("hidden");
+$("pn-modal").onclick = (e) => { if (e.target.id === "pn-modal") $("pn-modal").classList.add("hidden"); };
+$("p-name-btn").onclick = async () => {
+  try {
+    const d = await api("/me", "PUT", { full_name: $("p-name").value });
+    S.name = d.full_name; $("who").textContent = d.full_name;
+    try { sessionStorage.setItem("aqua", JSON.stringify({ token: S.token, role: S.role, name: S.name, userId: S.userId })); } catch (e) {}
+    $("pn-modal").classList.add("hidden");
+    toast("Name updated");
+    go("profile");
+  } catch (err) { setMsg("p-msg", err.message, false); }
+};
+
+function openPasswordDialog() {
+  $("pw-body").innerHTML = `
+    <label for="p-cur">Current password</label><input id="p-cur" type="password" autocomplete="current-password">
+    <label for="p-new">New password (at least 6 characters)</label><input id="p-new" type="password" autocomplete="new-password">
+    <label for="p-new2">Confirm new password</label><input id="p-new2" type="password" autocomplete="new-password">
+    <div id="p-pass-msg" class="form-msg" role="alert" style="margin-top:10px"></div>`;
+  $("pw-modal").classList.remove("hidden");
+  $("p-cur").focus();
+}
+$("pw-cancel").onclick = () => $("pw-modal").classList.add("hidden");
+$("pw-modal").onclick = (e) => { if (e.target.id === "pw-modal") $("pw-modal").classList.add("hidden"); };
+$("p-pass-btn").onclick = async () => {
+  if ($("p-new").value !== $("p-new2").value) return setMsg("p-pass-msg", "The new passwords do not match.", false);
+  try {
+    await api("/me/password", "POST", { current_password: $("p-cur").value, new_password: $("p-new").value });
+    $("pw-modal").classList.add("hidden");
+    toast("Password changed. Other devices have been signed out.");
+  } catch (err) { setMsg("p-pass-msg", err.message, false); }
+};
 
 /* ---------------- boot: restore session ---------------- */
 (async function boot() {

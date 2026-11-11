@@ -269,6 +269,18 @@ def add_reading(body: ReadingIn, _=Depends(admin_only)):
                 "reading": body.reading, "read_on": read_on.isoformat()}
 
 
+@app.get("/api/readings")
+def list_readings(connection_id: Optional[int] = None, _=Depends(admin_only)):
+    sql = "SELECT r.*, k.meter_no FROM readings r JOIN connections k ON k.id=r.connection_id"
+    params: tuple = ()
+    if connection_id is not None:
+        sql += " WHERE r.connection_id=?"
+        params = (connection_id,)
+    with get_conn() as c:
+        rows = c.execute(sql + " ORDER BY r.id", params).fetchall()
+    return [dict(r) for r in rows]
+
+
 # ---------- bills ----------
 def _refresh_overdue(c: sqlite3.Connection):
     today = date.today().isoformat()
