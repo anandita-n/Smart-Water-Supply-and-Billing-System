@@ -1,29 +1,33 @@
-# DEF-003: Login tokens never expire and cannot be revoked
+# DEF-003: Login tokens never expire and cannot be revoked (no logout)
 
 | Field | Value |
 |---|---|
 | Module | Authentication (`/api/auth/login`) |
-| Found by | Exploratory review during test design (no automated test) |
-| Severity | Low for this academic prototype (High in a real deployment) |
-| Priority | Low |
-| Status | **Open: deferred / known limitation** |
+| Found by | Review during test design; confirmed by TC-A56 (API test), run 3 |
+| Severity | Medium |
+| Priority | Medium |
+| Status | **Open** |
 | Reported by | Vivan Raj Belur |
 
 ## Description
-Tokens are stored in the `tokens` table with no expiry time, and there is no logout endpoint, so a token
-stays valid until the database is deleted. Logging out in the UI only reloads the page.
+Tokens are stored with no expiry time and there is no logout endpoint, so a token stays valid until the
+database is deleted. Clicking **Logout** in the UI only reloaded the page; the token still worked. If a
+token leaks (shared computer, logs), the account is exposed indefinitely.
 
 ## Steps to reproduce
 1. Log in and copy the token.
-2. Click **Logout**.
-3. Call `GET /api/me` with the old token.
+2. Call `POST /api/auth/logout` with it.
+3. Call `GET /api/me` with the same token.
 
 ## Expected result
-HTTP 401 after logout or after a fixed lifetime.
+Logout returns 200 and the token is rejected afterwards (HTTP 401). Tokens also expire after a fixed lifetime.
 
 ## Actual result
-HTTP 200; the token still works.
+`POST /api/auth/logout` does not exist (404/405), so the token can never be revoked and never expires.
 
-## Decision
-Deferred. It is listed in the Test Summary as a known risk and recommended for the next release
-(`expires_at` column plus `POST /api/auth/logout`).
+## Evidence
+`06_Test_Reports/run3_new_tests.xml`: `test_TC_A56_logout_invalidates_token` failed.
+
+## Root cause / proposed fix
+The `tokens` table has no `expires_at` column and `current_user` never checks time. Add `expires_at`
+(8 hours), reject expired tokens, and add `POST /api/auth/logout` that deletes the token.
