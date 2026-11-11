@@ -460,3 +460,25 @@ def test_TC_UI19_dashboard_attention_link_opens_the_overdue_bills_filter(driver,
     WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "bill-rows"), "Overdue"))
     assert Select(driver.find_element(By.ID, "bill-filter")).first_selected_option.text == "Overdue"
     assert "Unpaid" not in driver.find_element(By.ID, "bill-rows").text
+
+
+def test_TC_UI20_save_reading_and_generate_bill_in_one_step(driver, base_url):
+    make_billed_customer(base_url, "onestep", "ONESTEP1")        # already billed: Generate bill is disabled
+    login_as_admin(driver)
+    open_page(driver, "readings")
+    gen = WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".gen-btn[data-meter='ONESTEP1']")))
+    time.sleep(0.5)
+    gen = driver.find_element(By.CSS_SELECTOR, ".gen-btn[data-meter='ONESTEP1']")
+    assert not gen.is_enabled()
+    assert "Add a new reading first" in gen.get_attribute("title")           # the reason is explained
+    assert "waiting for next reading" in driver.find_element(By.ID, "reading-rows").text
+    driver.find_element(By.CSS_SELECTOR, ".add-reading-btn[data-meter='ONESTEP1']").click()
+    wait_visible(driver, "rd-modal")
+    fill(driver, "m-read", 60)                                                # 25 kL since the last reading of 35
+    shot(driver, "UI20_save_and_generate")
+    driver.find_element(By.ID, "read-bill-btn").click()
+    assert "generated" in text_of(driver, "toast", "generated")
+    time.sleep(0.8)
+    assert not driver.find_element(By.CSS_SELECTOR, ".gen-btn[data-meter='ONESTEP1']").is_enabled()   # billed again
+    open_page(driver, "bills")
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "bill-rows"), "Billed onestep"))
