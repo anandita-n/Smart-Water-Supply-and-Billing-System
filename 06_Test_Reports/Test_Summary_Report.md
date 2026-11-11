@@ -17,22 +17,23 @@
 | Run 7 | New modules (payment receipts, login lock-out, complaints, profile and password) tested before any fix; UI tests not run | 149 | 148 | 1 |
 | Run 8 | DEF-005 fixed, UI tests for the new screens added | 160 | 160 | 0 |
 | Run 9 | Customer history page, type filter, readings table and popup, three-dots profile, captions removed; reading-list API tests and UI tests TC-UI12 to TC-UI16 | 169 | 169 | 0 |
-| Run 10 | Final: dashboards for admin and customer as the landing page; UI tests TC-UI17 to TC-UI19; existing UI tests adjusted to start from the dashboard | 172 | 172 | 0 |
+| Run 10 | Dashboards for admin and customer as the landing page; UI tests TC-UI17 to TC-UI19; existing UI tests adjusted to start from the dashboard | 172 | 172 | 0 |
+| Run 11 | Final: Readings page explains why Generate bill is disabled and offers Save and generate bill; UI test TC-UI20 | 173 | 173 | 0 |
 
-Raw results: `run1_baseline.xml` to `run10_final.xml` (JUnit XML) and the `*_summary.txt` files.
+Raw results: `run1_baseline.xml` to `run11_final.xml` (JUnit XML) and the `*_summary.txt` files.
 Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
-### Final test inventory (run 10)
+### Final test inventory (run 11)
 | Level | Technique(s) | Test cases |
 |---|---|---|
 | Unit (`test_billing_unit.py`, `test_complaints.py`) | BVA, equivalence partitioning, decision table, state transition | 36 |
 | API (`test_api.py`, `test_payments.py`, `test_account_security.py`, `test_complaints.py`, `test_seed.py`) | Equivalence partitioning, BVA, RBAC, decision table, state transition, error guessing | 117 |
-| UI (`test_ui_selenium.py`) | Scenario-based, end to end | 19 |
-| **Total** | | **172** |
+| UI (`test_ui_selenium.py`) | Scenario-based, end to end | 20 |
+| **Total** | | **173** |
 
 Parameterised tests are counted per parameter set, because each set has its own test case ID.
 
-## 2. Code coverage (pytest-cov, run 10)
+## 2. Code coverage (pytest-cov, run 11)
 | File | Statements | Missed | Coverage |
 |---|---|---|---|
 | app/billing.py | 48 | 0 | 100% |
