@@ -1,5 +1,6 @@
-"""Selenium UI tests (Microsoft Edge, headless). Screenshots are saved to 07_Screenshots."""
+﻿"""Selenium UI tests (Microsoft Edge, headless). Screenshots are saved to 07_Screenshots."""
 import os
+import re
 import socket
 import threading
 import time
@@ -13,7 +14,7 @@ from selenium import webdriver  # noqa: E402
 from selenium.webdriver.common.by import By  # noqa: E402
 from selenium.webdriver.edge.options import Options  # noqa: E402
 from selenium.webdriver.support import expected_conditions as EC  # noqa: E402
-from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402
+from selenium.webdriver.support.ui import Select, WebDriverWait  # noqa: E402
 
 from app.main import app  # noqa: E402
 
@@ -74,65 +75,114 @@ def login(d, user, password):
     d.find_element(By.ID, "login-btn").click()
 
 
+def wait_visible(d, elem_id, timeout=8):
+    return WebDriverWait(d, timeout).until(EC.visibility_of_element_located((By.ID, elem_id)))
+
+
+def login_as_admin(d):
+    login(d, "admin", "admin123")
+    wait_visible(d, "app")
+
+
+def open_page(d, name):
+    d.find_element(By.ID, "nav-" + name).click()
+
+
+def logout(d):
+    d.find_element(By.ID, "logout-btn").click()
+    wait_visible(d, "auth-screen")
+
+
 def test_TC_UI01_invalid_login_shows_error(driver):
     login(driver, "admin", "wrong-password")
     assert "Invalid username or password" in text_of(driver, "auth-msg", "Invalid")
-    shot(driver, "UI01_invalid_login")
+    shot(driver, "UI01_login_screen_error")
 
 
 def test_TC_UI02_bill_estimator(driver):
+    login_as_admin(driver)
+    open_page(driver, "estimator")
     fill(driver, "c-units", 25)
     driver.find_element(By.ID, "calc-btn").click()
-    assert "Total: 240" in text_of(driver, "calc-out", "Total")
+    assert "Total: \u20b9240.00" in text_of(driver, "calc-out", "Total")
     shot(driver, "UI02_bill_estimator")
 
 
 def test_TC_UI03_estimator_negative_units_rejected(driver):
+    login_as_admin(driver)
+    open_page(driver, "estimator")
     fill(driver, "c-units", -5)
     driver.find_element(By.ID, "calc-btn").click()
-    assert text_of(driver, "calc-out", "greater") != ""
+    assert "greater than or equal to 0" in text_of(driver, "calc-out", "greater")
     shot(driver, "UI03_negative_units")
 
 
-def test_TC_UI04_admin_login_shows_admin_panel(driver):
-    login(driver, "admin", "admin123")
-    WebDriverWait(driver, 8).until(EC.visibility_of_element_located((By.ID, "admin")))
-    assert "ADMIN" in driver.find_element(By.ID, "who").text
-    shot(driver, "UI04_admin_dashboard")
+def test_TC_UI04_admin_login_shows_admin_menu(driver):
+    login_as_admin(driver)
+    assert driver.find_element(By.ID, "who").text == "System Administrator"
+    assert driver.find_element(By.ID, "role-label").text.lower() == "admin"
+    assert driver.find_element(By.ID, "nav-customers").is_displayed()
+    shot(driver, "UI04_admin_overview")
 
 
 def test_TC_UI05_end_to_end_billing_and_payment(driver):
-    # 1. customer registers
+    # 1. customer registers from the Create account tab
+    driver.find_element(By.ID, "tab-register").click()
     fill(driver, "r-name", "Ravi Kumar")
     fill(driver, "r-user", "ravi")
     fill(driver, "r-pass", "secret1")
     driver.find_element(By.ID, "register-btn").click()
-    msg = text_of(driver, "auth-msg", "Customer id")
-    cust_id = msg.split(":")[-1].strip()
-    # 2. admin creates connection, readings and bill
-    login(driver, "admin", "admin123")
-    WebDriverWait(driver, 8).until(EC.visibility_of_element_located((By.ID, "admin")))
-    fill(driver, "a-cust", cust_id)
+    cust_id = re.search(r"customer id is: (\d+)", text_of(driver, "auth-msg", "customer id")).group(1)
+    # 2. admin creates a connection, records two readings and generates the bill
+    driver.find_element(By.ID, "tab-login").click()
+    login_as_admin(driver)
+    open_page(driver, "customers")
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "a-cust")))
+    Select(driver.find_element(By.ID, "a-cust")).select_by_value(cust_id)
     fill(driver, "a-meter", "UIMTR1")
     fill(driver, "a-addr", "7 River View")
     driver.find_element(By.ID, "conn-btn").click()
-    text_of(driver, "admin-msg", "Connection created")
-    fill(driver, "m-conn", 1)
+    WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.ID, "customer-rows"), "UIMTR1"))
+    open_page(driver, "readings")
+    WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.ID, "m-conn")))
+    Select(driver.find_element(By.ID, "m-conn")).select_by_index(1)
     fill(driver, "m-read", 50)
     driver.find_element(By.ID, "read-btn").click()
-    text_of(driver, "admin-msg", "Reading saved")
+    text_of(driver, "toast", "Reading saved")
     fill(driver, "m-read", 75)
     driver.find_element(By.ID, "read-btn").click()
-    time.sleep(0.5)
+    time.sleep(0.6)
     driver.find_element(By.ID, "gen-btn").click()
-    assert "total: 240" in text_of(driver, "admin-msg", "Bill generated")
+    assert "\u20b9240.00" in text_of(driver, "toast", "generated")
     shot(driver, "UI05a_bill_generated")
-    # 3. customer logs in and pays
-    driver.get(driver.current_url)
+    # 3. customer signs in, sees the unpaid bill and pays it
+    logout(driver)
     login(driver, "ravi", "secret1")
-    WebDriverWait(driver, 8).until(EC.visibility_of_element_located((By.ID, "bills")))
+    wait_visible(driver, "app")
+    open_page(driver, "bills")
     row = WebDriverWait(driver, 8).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#bill-rows tr")))
     assert "UNPAID" in row.text
-    row.find_element(By.TAG_NAME, "button").click()
+    row.find_element(By.CSS_SELECTOR, ".pay-btn").click()
+    wait_visible(driver, "pay-modal")
+    assert "\u20b9240.00" in driver.find_element(By.ID, "pay-total").text
+    shot(driver, "UI05b_payment_dialog")
+    driver.find_element(By.ID, "confirm-ok").click()
     WebDriverWait(driver, 8).until(EC.text_to_be_present_in_element((By.CSS_SELECTOR, "#bill-rows .status"), "PAID"))
-    shot(driver, "UI05b_bill_paid")
+    shot(driver, "UI05c_bill_paid")
+
+
+def test_TC_UI06_logout_returns_to_login_and_session_is_gone(driver):
+    login_as_admin(driver)
+    logout(driver)
+    driver.refresh()
+    wait_visible(driver, "auth-screen")
+    assert not driver.find_element(By.ID, "app").is_displayed()
+
+
+def test_TC_UI07_customer_does_not_see_admin_menu(driver):
+    login(driver, "ravi", "secret1")
+    wait_visible(driver, "app")
+    assert driver.find_elements(By.ID, "nav-customers") == []
+    assert driver.find_elements(By.ID, "nav-readings") == []
+    assert driver.find_element(By.ID, "nav-bills").is_displayed()
+    shot(driver, "UI07_customer_dashboard")
