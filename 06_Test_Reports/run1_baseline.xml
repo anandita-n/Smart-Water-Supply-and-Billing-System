@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="89" time="37.675" timestamp="2026-11-11T10:28:12.858878+05:30" hostname="zephyrus"><testcase classname="05_Test_Automation.test_api" name="test_TC_A01_register_valid_customer" time="0.140" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A02_register_duplicate_username" time="0.188" /><testcase classname="05_Test_Automation.test_api" name="test_register_invalid_input[TC-A03-body0]" time="0.091" /><testcase classname="05_Test_Automation.test_api" name="test_register_invalid_input[TC-A04-body1]" time="0.081" /><testcase classname="05_Test_Automation.test_api" name="test_register_invalid_input[TC-A05-body2]" time="0.081" /><testcase classname="05_Test_Automation.test_api" name="test_register_invalid_input[TC-A06-body3]" time="0.080" /><testcase classname="05_Test_Automation.test_api" name="test_register_invalid_input[TC-A07-body4]" time="0.080" /><testcase classname="05_Test_Automation.test_api" name="test_register_username_length_boundaries_accepted[TC-A08-abc-3]" time="0.126" /><testcase classname="05_Test_Automation.test_api" name="test_register_username_length_boundaries_accepted[TC-A09-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-30]" time="0.129" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A10_login_success_returns_token" time="0.246" /><testcase classname="05_Test_Automation.test_api" name="test_login_failures[TC-A11-alice-wrong]" time="0.197" /><testcase classname="05_Test_Automation.test_api" name="test_login_failures[TC-A12-nobody-secret1]" time="0.142" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A13_protected_endpoint_requires_token" time="0.064" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A14_garbage_token_rejected" time="0.067" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A15_customer_cannot_create_connection" time="0.141" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A16_customer_cannot_add_reading" time="0.182" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A17_customer_cannot_generate_bill" time="0.193" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A18_create_connection_ok" time="0.217" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A19_duplicate_meter_number" time="0.189" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A20_connection_for_unknown_customer" time="0.107" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A21_connection_invalid_type" time="0.182" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A22_customer_sees_only_own_connections" time="0.279" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A23_first_reading_ok" time="0.205" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A24_reading_lower_than_previous_rejected" time="0.221" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A25_reading_equal_to_previous_accepted" time="0.219" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A26_negative_reading_rejected" time="0.205" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A27_reading_date_before_previous_rejected" time="0.211" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A28_reading_for_unknown_connection" time="0.115" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A29_future_dated_reading_rejected" time="0.203"><failure message="AssertionError: assert 201 == 400&#10; +  where 201 = &lt;Response [201 Created]&gt;.status_code&#10; +    where &lt;Response [201 Created]&gt; = add_reading(&lt;starlette.testclient.TestClient object at 0x0000024C6E7D8F50&gt;, {'Authorization': 'Bearer 242da6d792bab6cfa7af8e1608d3305c'}, 1, 100, '2999-01-01')">client = &lt;starlette.testclient.TestClient object at 0x0000024C6E7D8F50&gt;
+admin = {'Authorization': 'Bearer 242da6d792bab6cfa7af8e1608d3305c'}
+connection = 1
+
+    def test_TC_A29_future_dated_reading_rejected(client, admin, connection):
+&gt;       assert add_reading(client, admin, connection, 100, "2999-01-01").status_code == 400
+E       AssertionError: assert 201 == 400
+E        +  where 201 = &lt;Response [201 Created]&gt;.status_code
+E        +    where &lt;Response [201 Created]&gt; = add_reading(&lt;starlette.testclient.TestClient object at 0x0000024C6E7D8F50&gt;, {'Authorization': 'Bearer 242da6d792bab6cfa7af8e1608d3305c'}, 1, 100, '2999-01-01')
+
+05_Test_Automation\test_api.py:137: AssertionError</failure></testcase><testcase classname="05_Test_Automation.test_api" name="test_TC_A30_bill_needs_two_readings" time="0.195" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A31_bill_amounts_and_due_date" time="0.216" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A32_duplicate_bill_for_same_reading_rejected" time="0.223" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A33_bill_unknown_connection" time="0.103" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A34_customer_sees_own_bill_only" time="0.300" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A35_unpaid_bill_past_due_listed_as_overdue" time="0.229" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A36_get_unknown_bill" time="0.107" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A37_high_usage_creates_alert" time="0.222" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A38_normal_usage_no_alert" time="0.209" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A39_spike_vs_history_creates_alert" time="0.248" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A40_pay_on_time_exact_amount" time="0.241" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A41_pay_on_due_date_has_no_late_fee" time="0.235" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A42_pay_late_requires_fee" time="0.246" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A43_underpayment_rejected" time="0.240" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A44_overpayment_rejected" time="0.227" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A45_double_payment_rejected" time="0.231" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A46_cannot_pay_someone_elses_bill" time="0.291" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A47_pay_unknown_bill" time="0.105" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A48_overdue_bill_can_be_paid" time="0.252" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A49_commercial_bill_uses_multiplier" time="0.219" /><testcase classname="05_Test_Automation.test_api" name="test_TC_A50_calculator_ok" time="0.075" /><testcase classname="05_Test_Automation.test_api" name="test_calculator_invalid_inputs[TC-A51-params0-422]" time="0.074" /><testcase classname="05_Test_Automation.test_api" name="test_calculator_invalid_inputs[TC-A52-params1-422]" time="0.074" /><testcase classname="05_Test_Automation.test_api" name="test_calculator_invalid_inputs[TC-A53-params2-422]" time="0.072" /><testcase classname="05_Test_Automation.test_api" name="test_calculator_invalid_inputs[TC-A54-params3-422]" time="0.075"><failure message="ValueError: Out of range float values are not JSON compliant">client = &lt;starlette.testclient.TestClient object at 0x0000024C6E909510&gt;
+tc = 'TC-A54', params = {'units': 'inf'}, code = 422
+
+    @pytest.mark.parametrize("tc,params,code", [
+        ("TC-A51", {"units": -1}, 422),
+        ("TC-A52", {"units": "abc"}, 422),
+        ("TC-A53", {"units": 10, "type": "INDUSTRIAL"}, 422),
+        ("TC-A54", {"units": "inf"}, 422),
+    ])
+    def test_calculator_invalid_inputs(client, tc, params, code):
+&gt;       assert client.get("/api/tariff/calculate", params=params).status_code == code
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+05_Test_Automation\test_api.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py:473: in get
+    return super().get(
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py:1053: in get
+    return self.request(
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py:445: in request
+    return super().request(
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py:914: in send
+    response = self._send_handling_auth(
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py:348: in handle_request
+    raise exc
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\anyio\from_thread.py:334: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\anyio\from_thread.py:259: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\applications.py:1159: in __call__
+    await super().__call__(scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py:680: in app
+    await route.handle(scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py:276: in handle
+    await self.app(scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py:134: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py:120: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py:715: in app
+    response = actual_response_class(content, **response_args)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\responses.py:192: in __init__
+    super().__init__(content, status_code, headers, media_type, background)
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\responses.py:45: in __init__
+    self.body = self.render(content)
+                ^^^^^^^^^^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\responses.py:195: in render
+    return json.dumps(
+..\AppData\Local\Programs\Python\Python311\Lib\json\__init__.py:238: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+..\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;json.encoder.JSONEncoder object at 0x0000024C6E89A390&gt;
+o = {'units': inf, 'type': 'DOMESTIC', 'water_charge': inf, 'fixed_charge': 50.0, ...}
+_one_shot = True
+
+    def iterencode(self, o, _one_shot=False):
+        """Encode the given object and yield each string
+        representation as available.
+    
+        For example::
+    
+            for chunk in JSONEncoder().iterencode(bigobject):
+                mysocket.write(chunk)
+    
+        """
+        if self.check_circular:
+            markers = {}
+        else:
+            markers = None
+        if self.ensure_ascii:
+            _encoder = encode_basestring_ascii
+        else:
+            _encoder = encode_basestring
+    
+        def floatstr(o, allow_nan=self.allow_nan,
+                _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+            # Check for specials.  Note that this type of test is processor
+            # and/or platform-specific, so do tests which don't depend on the
+            # internals.
+    
+            if o != o:
+                text = 'NaN'
+            elif o == _inf:
+                text = 'Infinity'
+            elif o == _neginf:
+                text = '-Infinity'
+            else:
+                return _repr(o)
+    
+            if not allow_nan:
+                raise ValueError(
+                    "Out of range float values are not JSON compliant: " +
+                    repr(o))
+    
+            return text
+    
+    
+        if (_one_shot and c_make_encoder is not None
+                and self.indent is None):
+            _iterencode = c_make_encoder(
+                markers, self.default, _encoder, self.indent,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, self.allow_nan)
+        else:
+            _iterencode = _make_iterencode(
+                markers, self.default, _encoder, self.indent, floatstr,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, _one_shot)
+&gt;       return _iterencode(o, 0)
+               ^^^^^^^^^^^^^^^^^
+E       ValueError: Out of range float values are not JSON compliant
+
+..\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py:258: ValueError</failure></testcase><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U01-0-0.0]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U02-0.01-0.05]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U03-1-5.0]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U04-10-50.0]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U05-10.01-50.08]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U06-20-130.0]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U07-20.01-130.12]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U08-30-250.0]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U09-30.01-250.2]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_domestic_water_charge_boundaries[TC-U10-50-650.0]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U11_negative_units_rejected" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U12_invalid_connection_type_rejected" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U13_commercial_is_1_5x_domestic" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U14_fixed_charges" time="0.000" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U15_total_is_water_plus_fixed" time="0.000" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U16_no_fee_before_due_date" time="0.000" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U17_no_fee_on_due_date" time="0.000" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U18_fee_one_day_late" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U19_due_date_is_15_days_after_bill_date" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_leak_detection_decision_table[TC-U20-50-prev0-False]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_leak_detection_decision_table[TC-U21-100-prev1-False]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_leak_detection_decision_table[TC-U22-100.01-prev2-True]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_leak_detection_decision_table[TC-U23-30-prev3-False]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_leak_detection_decision_table[TC-U24-30.01-prev4-True]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_leak_detection_decision_table[TC-U25-5-prev5-False]" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U26_unpaid_to_paid" time="0.000" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U27_unpaid_to_overdue" time="0.000" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U28_overdue_to_paid" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U29_paid_is_terminal" time="0.001" /><testcase classname="05_Test_Automation.test_billing_unit" name="test_TC_U30_paid_cannot_become_overdue" time="0.001" /><testcase classname="05_Test_Automation.test_ui_selenium" name="test_TC_UI01_invalid_login_shows_error" time="4.840" /><testcase classname="05_Test_Automation.test_ui_selenium" name="test_TC_UI02_bill_estimator" time="4.063" /><testcase classname="05_Test_Automation.test_ui_selenium" name="test_TC_UI03_estimator_negative_units_rejected" time="3.931" /><testcase classname="05_Test_Automation.test_ui_selenium" name="test_TC_UI04_admin_login_shows_admin_panel" time="4.675" /><testcase classname="05_Test_Automation.test_ui_selenium" name="test_TC_UI05_end_to_end_billing_and_payment" time="8.914" /></testsuite></testsuites>

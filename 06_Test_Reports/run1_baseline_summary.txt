@@ -1,0 +1,5 @@
+﻿..\AppData\Local\Programs\Python\Python311\Lib\json\encoder.py:258: ValueError
+=========================== short test summary info ===========================
+FAILED 05_Test_Automation/test_api.py::test_TC_A29_future_dated_reading_rejected
+FAILED 05_Test_Automation/test_api.py::test_calculator_invalid_inputs[TC-A54-params3-422]
+2 failed, 87 passed in 37.74s
