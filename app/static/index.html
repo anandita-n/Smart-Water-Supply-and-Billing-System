@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Water Supply and Billing System</title>
+<style>
+  :root { --blue:#0b6fa4; --bg:#f2f7fa; --ink:#12303f; --err:#b3261e; --ok:#1b7f3b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:var(--blue); color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; }
+  main { max-width:900px; margin:20px auto; padding:0 16px; }
+  section { background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:0 1px 3px #0002; }
+  input, select, button { padding:8px; margin:4px 4px 4px 0; font-size:14px; }
+  button { background:var(--blue); color:#fff; border:0; border-radius:4px; cursor:pointer; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:6px; border-bottom:1px solid #dde; font-size:14px; }
+  .msg { min-height:20px; font-weight:600; }
+  .msg.err { color:var(--err); } .msg.ok { color:var(--ok); }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header><h1 style="margin:0;font-size:20px">Smart Water Supply and Billing System</h1>
+  <div><span id="who"></span> <button id="logout" class="hidden">Logout</button></div></header>
+<main>
+  <section id="auth">
+    <h2>Login</h2>
+    <input id="l-user" placeholder="Username"><input id="l-pass" type="password" placeholder="Password">
+    <button id="login-btn">Login</button>
+    <h2>Register (customer)</h2>
+    <input id="r-name" placeholder="Full name"><input id="r-user" placeholder="Username">
+    <input id="r-pass" type="password" placeholder="Password (min 6)">
+    <button id="register-btn">Register</button>
+    <div id="auth-msg" class="msg"></div>
+  </section>
+
+  <section id="calc">
+    <h2>Bill estimator</h2>
+    <input id="c-units" type="number" min="0" placeholder="Units (kL)">
+    <select id="c-type"><option>DOMESTIC</option><option>COMMERCIAL</option></select>
+    <button id="calc-btn">Calculate</button>
+    <div id="calc-out" class="msg"></div>
+  </section>
+
+  <section id="admin" class="hidden">
+    <h2>Admin: connection</h2>
+    <input id="a-cust" type="number" placeholder="Customer id"><input id="a-meter" placeholder="Meter no">
+    <select id="a-type"><option>DOMESTIC</option><option>COMMERCIAL</option></select>
+    <input id="a-addr" placeholder="Address"><button id="conn-btn">Create connection</button>
+    <h2>Admin: meter reading / bill</h2>
+    <input id="m-conn" type="number" placeholder="Connection id"><input id="m-read" type="number" step="0.01" placeholder="Reading">
+    <input id="m-date" type="date">
+    <button id="read-btn">Add reading</button><button id="gen-btn">Generate bill</button>
+    <div id="admin-msg" class="msg"></div>
+  </section>
+
+  <section id="bills" class="hidden">
+    <h2>Bills</h2>
+    <button id="refresh-btn">Refresh</button>
+    <table><thead><tr><th>ID</th><th>Units</th><th>Total</th><th>Due</th><th>Status</th><th></th></tr></thead>
+    <tbody id="bill-rows"></tbody></table>
+    <h2>Alerts</h2><ul id="alert-list"></ul>
+    <div id="bill-msg" class="msg"></div>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let token = null, role = null;
+function say(id, text, ok) { const e = $(id); e.textContent = text; e.className = "msg " + (ok ? "ok" : "err"); }
+async function api(path, method="GET", body) {
+  const r = await fetch("/api" + path, { method,
+    headers: Object.assign({"Content-Type":"application/json"}, token ? {Authorization:"Bearer "+token} : {}),
+    body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { const d = data.detail; throw new Error(typeof d === "string" ? d : JSON.stringify(d)); }
+  return data;
+}
+$("login-btn").onclick = async () => {
+  try {
+    const d = await api("/auth/login","POST",{username:$("l-user").value,password:$("l-pass").value});
+    token = d.token; role = d.role;
+    $("who").textContent = d.full_name + " (" + d.role + ")";
+    $("auth").classList.add("hidden"); $("logout").classList.remove("hidden");
+    $("bills").classList.remove("hidden");
+    if (role === "ADMIN") $("admin").classList.remove("hidden");
+    loadBills();
+  } catch (e) { say("auth-msg", e.message, false); }
+};
+$("register-btn").onclick = async () => {
+  try {
+    const d = await api("/auth/register","POST",{username:$("r-user").value,password:$("r-pass").value,full_name:$("r-name").value});
+    say("auth-msg", "Registered. Customer id: " + d.id, true);
+  } catch (e) { say("auth-msg", e.message, false); }
+};
+$("logout").onclick = () => location.reload();
+$("calc-btn").onclick = async () => {
+  try {
+    const d = await api(`/tariff/calculate?units=${encodeURIComponent($("c-units").value)}&type=${$("c-type").value}`);
+    say("calc-out", `Water: ${d.water_charge}  Fixed: ${d.fixed_charge}  Total: ${d.total}`, true);
+  } catch (e) { say("calc-out", e.message, false); }
+};
+$("conn-btn").onclick = async () => {
+  try {
+    const d = await api("/connections","POST",{customer_id:+$("a-cust").value,meter_no:$("a-meter").value,type:$("a-type").value,address:$("a-addr").value});
+    say("admin-msg", "Connection created. id: " + d.id, true);
+  } catch (e) { say("admin-msg", e.message, false); }
+};
+$("read-btn").onclick = async () => {
+  try {
+    const b = {connection_id:+$("m-conn").value, reading:+$("m-read").value};
+    if ($("m-date").value) b.read_on = $("m-date").value;
+    await api("/readings","POST",b); say("admin-msg","Reading saved",true);
+  } catch (e) { say("admin-msg", e.message, false); }
+};
+$("gen-btn").onclick = async () => {
+  try {
+    const d = await api("/bills/generate","POST",{connection_id:+$("m-conn").value});
+    say("admin-msg","Bill generated. id: " + d.id + ", total: " + d.total, true); loadBills();
+  } catch (e) { say("admin-msg", e.message, false); }
+};
+$("refresh-btn").onclick = loadBills;
+async function loadBills() {
+  try {
+    const bills = await api("/bills");
+    $("bill-rows").innerHTML = bills.map(b => `<tr><td>${b.id}</td><td>${b.units}</td><td>${b.total}</td><td>${b.due_date}</td>
+      <td class="status">${b.status}</td><td>${b.status!=="PAID" ? `<button onclick="pay(${b.id})">Pay</button>` : ""}</td></tr>`).join("");
+    const alerts = await api("/alerts");
+    $("alert-list").innerHTML = alerts.map(a => `<li>${a.message} (${a.created_on})</li>`).join("");
+  } catch (e) { say("bill-msg", e.message, false); }
+}
+async function pay(id) {
+  try {
+    const b = await api("/bills/" + id);
+    const today = new Date().toISOString().slice(0,10);
+    const fee = today > b.due_date ? +(25 + b.total * 0.02).toFixed(2) : 0;
+    await api(`/bills/${id}/pay`,"POST",{amount: +(b.total + fee).toFixed(2)});
+    say("bill-msg","Payment successful for bill " + id, true); loadBills();
+  } catch (e) { say("bill-msg", e.message, false); }
+}
+</script>
+</body>
+</html>
