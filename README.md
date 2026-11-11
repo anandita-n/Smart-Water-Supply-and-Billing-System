@@ -24,18 +24,20 @@ A water utility system with:
 - Monthly meter readings
 - Tiered tariff billing: Rs 5, 8, 12 and 20 per kL by slab; commercial charges 1.5x; fixed monthly charge
 - Bill lifecycle UNPAID, OVERDUE, PAID, with a due date 15 days after the bill date and a late fee
-- Payments (exact amount, late fee included)
+- Payments (exact amount, late fee included) with a payment history and printable receipts
+- Complaints: customers report leaks, billing or supply problems; the admin moves them OPEN, IN_PROGRESS, RESOLVED
+- Account security: lock-out after 5 failed sign-ins, profile page, password change
 - Leak / high-usage alerts
-- A web app (sign-in page, top navigation, bills, readings, payment dialog) and a REST API (interactive docs at `/docs`)
+- A web app (sign-in page, top navigation, bills, payments, complaints, profile) and a REST API (interactive docs at `/docs`)
 
 ## Screenshots
 | Sign in | Customer bills |
 |---|---|
 | ![Sign in](07_Screenshots/Demo01_sign_in.png) | ![Customer bills](07_Screenshots/Demo05_customer_bills.png) |
 
-| Admin: customers + New connection popup | |
+| Payment receipt | Admin: complaints |
 |---|---|
-| ![Popup](07_Screenshots/Demo07_new_connection_popup.png) | |
+| ![Receipt](07_Screenshots/Demo11_receipt.png) | ![Complaints](07_Screenshots/Demo09_admin_complaints.png) |
 
 | Admin: all bills | Payment dialog |
 |---|---|
@@ -44,8 +46,8 @@ A water utility system with:
 More are in `07_Screenshots/`.
 
 ## Results at a glance
-- **99 automated test cases** (30 unit, 62 API, 7 Selenium UI): 87 of 89 passed on run 1; all 99 pass on the final run
-- **4 defects** found by the tests, all fixed and retested (see `04_Defect_Reports/README.md`)
+- **160 automated test cases** (36 unit, 113 API, 11 Selenium UI): 87 of 89 passed on run 1; all 160 pass on the final run
+- **5 defects** found by the tests, all fixed and retested (see `04_Defect_Reports/README.md`)
 - **98%** statement coverage of the `app` package
 
 ## Run the application
@@ -56,12 +58,14 @@ uvicorn app.main:app --reload
 Open http://127.0.0.1:8000 for the UI or http://127.0.0.1:8000/docs for the API.
 An admin account is created on first start: `admin` / `admin123` (demo only).
 
-### Load the demo data (6 customers, 18 bills)
+### Load the demo data (6 customers, 18 bills, 11 receipts, 4 complaints)
 ```bash
 python -m app.seed
 ```
 Customers: `anandita`, `vivan`, `rohan`, `priya`, `karthik`, `meera`, all with the password `water123`.
-The data has paid, unpaid and overdue bills, a late payment with a fee, and a high-usage alert (karthik).
+The data has paid, unpaid and overdue bills, a late payment with a fee, a high-usage alert (karthik) and complaints in each state.
+Sign in as dmin to see Payments and Complaints from the staff side, or as a customer to see the customer side.
+After 5 wrong passwords an account is locked for 15 minutes.
 
 ## Run the tests
 ```bash
@@ -77,9 +81,9 @@ app/                     Application source (FastAPI backend + static UI)
 01_Test_Plan/            Test plan
 02_Test_Case_Design/     Test cases: BVA, equivalence partitioning, decision tables, state transition
 03_Test_Execution/       Execution log (run 1 vs run 2)
-04_Defect_Reports/       DEF-001 to DEF-004 with a summary table
+04_Defect_Reports/       DEF-001 to DEF-005 with a summary table
 05_Test_Automation/      pytest unit/API tests and Selenium UI tests
-06_Test_Reports/         JUnit XML for 4 runs, coverage output, test summary report
+06_Test_Reports/         JUnit XML for 8 runs, coverage output, test summary report
 07_Screenshots/          Selenium screenshots
 Conclusion.md
 ```

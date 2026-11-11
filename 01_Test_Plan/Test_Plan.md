@@ -20,7 +20,10 @@ leak/high-usage alerts. This plan describes how the system is tested.
 | M4 | Tariff & billing | Slab charges, commercial multiplier, fixed charge, bill generation, due date | Unit, API, UI |
 | M5 | Payments | Exact-amount payment, late fee, double payment, ownership | Unit, API, UI |
 | M6 | Alerts | High usage (> 100 kL) and spike (> 3x average) alerts | Unit, API |
-| M7 | Web UI | Sign in/create account, top navigation by role (admin: Customers, Readings, Bills; customer: My bills, Estimate), payment dialog, sign out | UI (Selenium) |
+| M7 | Web UI | Sign in/create account, top navigation by role (admin: Customers, Readings, Bills, Payments, Complaints; customer: My bills, Payments, Complaints, Estimate), popups, sign out | UI (Selenium) |
+| M8 | Payments & receipts | Payment record and receipt number, payment history, receipt breakdown, payment methods, access control | API, UI |
+| M9 | Account security | Login lock-out after 5 failed attempts, profile update, password change, blank-name validation | API, UI |
+| M10 | Complaints | Customer files a complaint; admin moves it OPEN, IN_PROGRESS, RESOLVED with a resolution note | Unit, API, UI |
 
 ### Business rules (the test oracle)
 - Slabs per month: 0-10 kL at Rs 5, 10-20 kL at Rs 8, 20-30 kL at Rs 12, above 30 kL at Rs 20.
@@ -28,6 +31,10 @@ leak/high-usage alerts. This plan describes how the system is tested.
 - Due date = bill date + 15 days. Late fee = Rs 25 + 2% of total if paid after the due date.
 - Bill states: UNPAID, OVERDUE, PAID (PAID is final).
 - Alert when usage > 100 kL, or usage > 3 x the average of earlier bills.
+- Every payment creates one receipt (RCP-nnnnnn). Methods: UPI, Card, Net banking, Cash.
+- Five failed sign-ins lock the account for 15 minutes; a successful sign-in resets the count.
+- Complaint life cycle: OPEN, IN_PROGRESS, RESOLVED (cannot skip a step or go back); resolving needs a note of at least 3 characters; description 10 to 500 characters.
+- Changing the password needs the current password, must differ from it, and signs out the other sessions.
 
 ## 3. Features not tested
 Performance and load testing, real payment gateways, email/SMS notifications, and

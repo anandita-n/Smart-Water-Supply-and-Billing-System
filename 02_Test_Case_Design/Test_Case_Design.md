@@ -99,7 +99,60 @@ TC-A02, A10 to A12 (auth), TC-A18 to A20 (connections), TC-A23, A28 (readings),
 TC-A30 to A33, A36 (bill generation), TC-A31 (amounts and due date), TC-A49 (commercial bill),
 TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A61 and TC-A62 (demo data loader: 6 customers incl. S Anandita Narayan and Vivan Raj Belur, safe to run twice, customers can sign in).
 
-## 9. UI test cases (Selenium, Microsoft Edge headless)
+## 9. Payments and receipts (TC-A63 to TC-A72, TC-A109 to TC-A112)
+| ID | Technique | Scenario | Expected |
+|---|---|---|---|
+| TC-A63 | Functional | Pay a bill by card | One payment record, receipt RCP-000001 |
+| TC-A64, A65 | Access control | Customer lists payments / admin lists payments | Customer sees only their own; admin sees all with customer name |
+| TC-A66 | Functional | Open the receipt | Water 190, fixed 50, late fee 0, amount 240, address and units correct |
+| TC-A67, A68 | Access control | Another customer opens the receipt / unknown receipt | 403 / 404 |
+| TC-A69 | Equivalence partitioning | Payment method BITCOIN | 422 and no payment record |
+| TC-A70 | Security | Payment history without login | 401 |
+| TC-A71 | BVA (late fee) | Pay one day after the due date | Record holds late fee 29.80 and amount 269.80 |
+| TC-A72 | Error guessing | Wrong amount, then correct, then a repeat payment | Exactly one payment record |
+| TC-A109 to A112 | Equivalence partitioning | Each valid method: UPI, CARD, NETBANKING, CASH | 200 |
+
+## 10. Login lock-out (TC-A73 to TC-A78)
+| ID | Technique | Scenario | Expected |
+|---|---|---|---|
+| TC-A73 | BVA | 5 wrong passwords in a row | 401, 401, 401, 401, then 423 (locked) |
+| TC-A74 | Decision table | Correct password while locked | 423 |
+| TC-A75 | BVA | 4 failures, one success, then 4 more failures | Never locked (counter reset) |
+| TC-A76 | State transition | Lock period expires | Login works again |
+| TC-A77 | Error guessing | Repeated attempts for an unknown username | Always 401, never "locked" (no account to lock) |
+| TC-A78 | Equivalence partitioning | One account locked | A different account still signs in |
+
+| Failed attempts so far | Locked? | Password correct? | Result |
+|---|---|---|---|
+| 0 to 3 | No | No | 401, counter +1 |
+| 4 | No | No | 423, account locked |
+| any | No | Yes | 200, counter reset |
+| any | Yes | Yes or No | 423 |
+
+## 11. Complaints
+| ID | Technique | Scenario | Expected |
+|---|---|---|---|
+| TC-U31 to U35 | State transition | OPEN to IN_PROGRESS, IN_PROGRESS to RESOLVED valid; OPEN to RESOLVED, backwards, and any change after RESOLVED invalid | Valid ones succeed, others raise an error |
+| TC-U36 | State transition | Allowed next states | OPEN: [IN_PROGRESS], IN_PROGRESS: [RESOLVED], RESOLVED: [] |
+| TC-A79, A107 | Functional | File a complaint with / without a connection | 201, status OPEN |
+| TC-A80, A103, A104, A105 | BVA (description length 10 to 500) | 9, 10, 500, 501 characters | 422, 201, 201, 422 |
+| TC-A81, A106 | Equivalence partitioning | Invalid category / status OPEN as an update target | 422 |
+| TC-A82 | Access control | Complaint on another customer's connection | 403 |
+| TC-A83, A84 | Access control | Customer list / admin list | Own only / all with customer name |
+| TC-A85 to A89 | State transition | IN_PROGRESS; resolve without note (400); resolve with note; skip a step (409); change after RESOLVED (409) | As listed |
+| TC-A90, A91, A92, A113 | Access control | Customer updates (403), admin files (403), unknown id (404), no login (401) | As listed |
+
+## 12. Profile and password
+| ID | Technique | Scenario | Expected |
+|---|---|---|---|
+| TC-A93, A94 | Equivalence partitioning | Update name with spaces around it / empty name | Trimmed name saved / 422 |
+| TC-A95 | Functional | Change password | Old password stops working, new one works |
+| TC-A96, A97 | Decision table | Wrong current password / new equals current | 400, password unchanged |
+| TC-A98, A108 | BVA (min length 6) | 5 characters / 6 characters | 422 / 200 |
+| TC-A99 | Security | Change password while a second session is open | Other session signed out, current one kept |
+| TC-A100 | Security | Profile calls without login | 401 |
+| TC-A101, A102 | Error guessing | Name made only of spaces at registration / in profile | 422 (A101 found DEF-005) |
+## 13. UI test cases (Selenium, Microsoft Edge headless)
 | ID | Scenario | Expected |
 |---|---|---|
 | TC-UI01 | Sign in with a wrong password | "Invalid username or password" is shown on the login screen |
@@ -109,3 +162,7 @@ TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A61 and TC
 | TC-UI05 | End to end: register; admin opens the New connection popup and creates a connection, adds two readings and a bill; customer signs in, opens the payment dialog (₹240.00) and pays | Bill status changes from UNPAID to PAID |
 | TC-UI06 | Sign out, then reload the page | Login screen is shown; the session is gone |
 | TC-UI07 | Customer signs in | The menu is exactly My bills, Estimate; admin items are not shown |
+| TC-UI08 | Customer pays a bill by card, then opens Payments and the receipt | Receipt number, card method, amount ₹240.00 and the meter are shown |
+| TC-UI09 | Customer files a leak complaint through the popup; admin opens Complaints and moves it forward | Customer sees Open; admin update shows In progress |
+| TC-UI10 | Customer changes their password on the Profile page (first with a mismatching confirmation) | "do not match" message, then "Password changed"; sign-in with the new password works |
+| TC-UI11 | Five wrong sign-ins for one account, then the correct password | "locked" message; the correct password is still refused |
