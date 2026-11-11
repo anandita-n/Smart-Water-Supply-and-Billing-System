@@ -80,7 +80,7 @@ class ConnectionIn(BaseModel):
 
 class ReadingIn(BaseModel):
     connection_id: int
-    reading: float = Field(ge=0)
+    reading: float = Field(ge=0, allow_inf_nan=False)
     read_on: Optional[date] = None
 
 
@@ -89,7 +89,7 @@ class GenerateIn(BaseModel):
 
 
 class PayIn(BaseModel):
-    amount: float
+    amount: float = Field(allow_inf_nan=False)
     paid_on: Optional[date] = None
 
 
@@ -125,7 +125,7 @@ def me(user=Depends(current_user)):
 
 # ---------- tariff ----------
 @app.get("/api/tariff/calculate")
-def calculate(units: float = Query(..., ge=0), type: str = Query("DOMESTIC", pattern="^(DOMESTIC|COMMERCIAL)$")):
+def calculate(units: float = Query(..., ge=0, allow_inf_nan=False), type: str = Query("DOMESTIC", pattern="^(DOMESTIC|COMMERCIAL)$")):
     return {"units": units, "type": type, **billing.bill_total(units, type)}
 
 
@@ -160,6 +160,8 @@ def list_connections(user=Depends(current_user)):
 @app.post("/api/readings", status_code=201)
 def add_reading(body: ReadingIn, _=Depends(admin_only)):
     read_on = body.read_on or date.today()
+    if read_on > date.today():
+        raise HTTPException(400, "Reading date cannot be in the future")
     with get_conn() as c:
         conn = c.execute("SELECT * FROM connections WHERE id=?", (body.connection_id,)).fetchone()
         if not conn:
