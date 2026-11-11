@@ -146,3 +146,18 @@ textarea { resize: vertical; min-height: 84px; }
 
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
+
+/* ---------- dashboard ---------- */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.panel { border: 1px solid var(--line); border-radius: 6px; padding: 16px 20px; }
+.panel h3 { margin: 0 0 12px; font-size: 14px; }
+.big { font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.small { font-size: 12px; }
+.attn { list-style: none; margin: 0; padding: 0; }
+.attn li { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #eceff1; }
+.attn li:last-child { border-bottom: 0; }
+.attn .link { padding: 0; }
+table.plain { width: 100%; }
+table.plain td { padding: 7px 0; border-bottom: 1px solid #eceff1; }
+table.plain tr:last-child td { border-bottom: 0; }
+@media (max-width: 720px) { .dash-grid { grid-template-columns: 1fr; } }

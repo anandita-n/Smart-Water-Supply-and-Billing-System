@@ -78,7 +78,7 @@ function startSession(token, role, name, userId) {
   $("who").textContent = name;
   $("role-label").textContent = role.toLowerCase();
   buildNav();
-  go(S.role === "ADMIN" ? "customers" : "bills");
+  go("dashboard");
 }
 
 function endSession() {
@@ -98,8 +98,8 @@ $("logout-btn").onclick = async () => {
 /* ---------------- navigation (only what the system needs) ---------------- */
 function buildNav() {
   const items = S.role === "ADMIN"
-    ? [["customers", "Customers"], ["readings", "Readings"], ["bills", "Bills"], ["payments", "Payments"], ["complaints", "Complaints"]]
-    : [["bills", "My bills"], ["payments", "Payments"], ["complaints", "Complaints"], ["estimator", "Estimate"]];
+    ? [["dashboard", "Dashboard"], ["customers", "Customers"], ["readings", "Readings"], ["bills", "Bills"], ["payments", "Payments"], ["complaints", "Complaints"]]
+    : [["dashboard", "Dashboard"], ["bills", "My bills"], ["payments", "Payments"], ["complaints", "Complaints"], ["estimator", "Estimate"]];
   $("nav").innerHTML = items.map(([id, label]) => `<button class="nav-item" id="nav-${id}" data-page="${id}" type="button">${label}</button>`).join("");
   $("nav").querySelectorAll(".nav-item").forEach((b) => (b.onclick = () => go(b.dataset.page)));
 }
@@ -110,7 +110,7 @@ async function go(page) {
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.page === navPage));
   try {
     await loadData();
-    await ({ customers: renderCustomers, customer: renderCustomerDetail, readings: renderReadings, bills: renderBills, estimator: renderEstimator,
+    await ({ dashboard: renderDashboard, customers: renderCustomers, customer: renderCustomerDetail, readings: renderReadings, bills: renderBills, estimator: renderEstimator,
              payments: renderPayments, complaints: renderComplaints, profile: renderProfile })[page]();
   } catch (err) { $("view").innerHTML = `<p>${esc(err.message)}</p>`; }
 }
@@ -120,6 +120,91 @@ async function loadData() {
   if (S.role === "ADMIN") reqs.push(api("/customers"));
   const [conns, bills, alerts, customers] = await Promise.all(reqs);
   S.connections = conns; S.bills = bills; S.alerts = alerts; S.customers = customers || [];
+}
+
+/* ---------------- dashboard: only what needs a decision today ---------------- */
+const daysOver = (due) => Math.max(0, Math.round((new Date(todayISO()) - new Date(due)) / 86400000));
+const goLink = (page, text, filter) => `<button class="link go-link" data-page="${page}" ${filter ? `data-filter="${filter}"` : ""} type="button">${text}</button>`;
+function bindGoLinks() {
+  document.querySelectorAll(".go-link").forEach((b) => (b.onclick = () => { if (b.dataset.filter) S.billFilter = b.dataset.filter; go(b.dataset.page); }));
+}
+const plural = (n, one, many) => (n === 1 ? one : many);
+function recentAlerts() {                      // a dashboard should not nag about last quarter
+  const d = new Date(); d.setDate(d.getDate() - 30);
+  const cutoff = d.toISOString().slice(0, 10);
+  return S.alerts.filter((a) => a.created_on >= cutoff);
+}
+
+function renderDashboard() { return S.role === "ADMIN" ? adminDashboard() : customerDashboard(); }
+
+async function adminDashboard() {
+  const [payments, complaints, readings] = await Promise.all([api("/payments"), api("/complaints"), api("/readings")]);
+  const month = todayISO().slice(0, 7);
+  const outstanding = round2(S.bills.filter((b) => b.status !== "PAID").reduce((s, b) => s + amountDue(b), 0));
+  const collected = round2(payments.filter((p) => p.paid_on.startsWith(month)).reduce((s, p) => s + p.amount, 0));
+  const billedKl = round2(S.bills.filter((b) => b.bill_date.startsWith(month)).reduce((s, b) => s + b.units, 0));
+  const ready = S.connections.filter((k) => {
+    const rs = readings.filter((r) => r.connection_id === k.id);
+    return rs.length >= 2 && !S.bills.some((b) => b.reading_id === rs[rs.length - 1].id);
+  }).length;
+  const overdue = S.bills.filter((b) => b.status === "OVERDUE").length;
+  const openComplaints = complaints.filter((c) => c.status !== "RESOLVED").length;
+  const alerts = recentAlerts().length;
+  const items = [
+    [ready, plural(ready, "meter is ready to bill", "meters are ready to bill"), goLink("readings", "Open readings")],
+    [overdue, plural(overdue, "bill is overdue", "bills are overdue"), goLink("bills", "View", "OVERDUE")],
+    [openComplaints, plural(openComplaints, "complaint is open", "complaints are open"), goLink("complaints", "View")],
+    [alerts, plural(alerts, "high-usage alert", "high-usage alerts"), goLink("bills", "View", "ALL")],
+  ].filter(([n]) => n > 0);
+  const recent = payments.slice().sort((a, b) => b.paid_on.localeCompare(a.paid_on) || b.id - a.id).slice(0, 5);
+
+  $("view").innerHTML = `<h2>Dashboard</h2>
+    <div class="summary" style="margin-top:14px">
+      <div><span class="k">Outstanding</span><span class="v" id="dash-outstanding">${money(outstanding)}</span></div>
+      <div><span class="k">Collected this month</span><span class="v">${money(collected)}</span></div>
+      <div><span class="k">Water billed this month</span><span class="v">${billedKl} kL</span></div></div>
+    <div class="dash-grid">
+      <div class="panel"><h3>Needs attention</h3>${items.length
+        ? `<ul class="attn" id="attention-list">${items.map(([n, text, link]) => `<li><span><strong>${n}</strong> ${text}</span>${link}</li>`).join("")}</ul>`
+        : '<p class="muted" id="attention-list">Nothing needs attention right now.</p>'}</div>
+      <div class="panel"><h3>Recent payments</h3>${recent.length ? `<table class="plain"><tbody id="recent-payments">${recent.map((p) => `<tr>
+          <td>${custLink(p.customer_id, p.customer_name)}<div class="muted small">${p.receipt_no}, ${p.paid_on}</div></td><td class="num">${money(p.amount)}</td></tr>`).join("")}</tbody></table>
+        <div style="margin-top:8px">${goLink("payments", "All payments")}</div>` : '<p class="muted">No payments yet.</p>'}</div>
+    </div>`;
+  bindGoLinks();
+  bindCustLinks();
+}
+
+async function customerDashboard() {
+  const complaints = await api("/complaints");
+  const open = S.bills.filter((b) => b.status !== "PAID").sort((a, b) => (a.due_date < b.due_date ? -1 : 1));
+  const due = round2(open.reduce((s, b) => s + amountDue(b), 0));
+  const oldest = open[0];
+  const last = S.bills[S.bills.length - 1];
+  const before = last ? S.bills.filter((b) => b.connection_id === last.connection_id && b.id < last.id).pop() : null;
+  const diff = last && before ? round2(last.units - before.units) : null;
+  const openComplaints = complaints.filter((c) => c.status !== "RESOLVED").length;
+  const alert = recentAlerts().pop();
+
+  $("view").innerHTML = `<h2>Dashboard</h2>
+    ${alert ? `<div class="notice" style="margin-top:14px"><strong>High water usage detected.</strong> ${esc(alert.message)} on meter ${esc(connLabel(alert.connection_id))}. If you have not used that much, check for a leak and ${goLink("complaints", "report it")}.</div>` : ""}
+    <div class="dash-grid" style="margin-top:14px">
+      <div class="panel"><h3>Amount due</h3>
+        <div class="big" id="dash-due">${money(due)}</div>
+        ${oldest ? `<p class="muted">${oldest.status === "OVERDUE" ? `Overdue since ${oldest.due_date}` : `Due by ${oldest.due_date}`}${open.length > 1 ? `, ${open.length} bills pending` : ""}</p>
+          <button id="dash-pay" class="btn primary" type="button">Pay now</button>` : '<p class="muted">You are all paid up.</p>'}</div>
+      <div class="panel"><h3>Latest bill</h3>${last ? `
+        <table class="plain"><tbody>
+          <tr><td class="muted">Bill</td><td class="num">#${last.id} &middot; ${last.bill_date}</td></tr>
+          <tr><td class="muted">Usage</td><td class="num">${last.units} kL</td></tr>
+          <tr><td class="muted">Amount</td><td class="num">${money(last.status === "PAID" ? last.total + last.late_fee : last.total)}</td></tr>
+          <tr><td class="muted">Status</td><td class="num">${status(last.status)}</td></tr></tbody></table>
+        ${diff === null ? "" : `<p class="muted small" style="margin-bottom:0">${diff === 0 ? "Same usage as the previous bill." : `${Math.abs(diff)} kL ${diff > 0 ? "more" : "less"} than the previous bill.`}</p>`}
+        <div style="margin-top:8px">${goLink("bills", "All bills")}</div>` : '<p class="muted">No bills yet.</p>'}</div>
+    </div>
+    ${openComplaints ? `<p class="muted" style="margin-top:4px">You have ${openComplaints} open ${plural(openComplaints, "complaint", "complaints")}. ${goLink("complaints", "View")}</p>` : ""}`;
+  if (oldest) $("dash-pay").onclick = () => openPay(oldest.id);
+  bindGoLinks();
 }
 
 /* ---------------- bills ---------------- */
