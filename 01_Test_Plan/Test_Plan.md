@@ -16,7 +16,7 @@ leak/high-usage alerts. This plan describes how the system is tested.
 |---|---|---|---|
 | M1 | Authentication | Register, login, logout, token expiry, case-insensitive usernames, role-based access (ADMIN / CUSTOMER) | API, UI |
 | M2 | Connections & customers | Create connection, unique meter number, ownership, listing; customer list with type filter and search; one customer's history (bills, payments, complaints, readings) | API, UI |
-| M3 | Meter readings | Add reading; no decrease, no date going backwards, no future dates; reading list; per-meter status (ready to bill / billed) | API, UI |
+| M3 | Meter readings | Add reading; no decrease, no date going backwards, no future dates; reading list; per-meter status (ready to bill / billed) with the reason a button is disabled; Save and generate bill in one step | API, UI |
 | M4 | Tariff & billing | Slab charges, commercial multiplier, fixed charge, bill generation, due date | Unit, API, UI |
 | M5 | Payments | Exact-amount payment, late fee, double payment, ownership | Unit, API, UI |
 | M6 | Alerts | High usage (> 100 kL) and spike (> 3x average) alerts | Unit, API |
