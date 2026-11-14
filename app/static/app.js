@@ -98,8 +98,8 @@ $("logout-btn").onclick = async () => {
 /* ---------------- navigation (only what the system needs) ---------------- */
 function buildNav() {
   const items = S.role === "ADMIN"
-    ? [["dashboard", "Dashboard"], ["customers", "Customers"], ["readings", "Readings"], ["bills", "Bills"], ["payments", "Payments"], ["complaints", "Feedback"]]
-    : [["dashboard", "Dashboard"], ["bills", "My bills"], ["payments", "Payments"], ["complaints", "Feedback"], ["estimator", "Estimate"]];
+    ? [["dashboard", "Dashboard"], ["customers", "Customers"], ["readings", "Readings"], ["bills", "Bills"], ["complaints", "Feedback"]]
+    : [["dashboard", "Dashboard"], ["bills", "My bills"], ["payments", "Payments"], ["complaints", "Feedback"]];
   $("nav").innerHTML = items.map(([id, label]) => `<button class="nav-item" id="nav-${id}" data-page="${id}" type="button">${label}</button>`).join("");
   $("nav").querySelectorAll(".nav-item").forEach((b) => (b.onclick = () => go(b.dataset.page)));
 }
@@ -110,7 +110,7 @@ async function go(page) {
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("active", b.dataset.page === navPage));
   try {
     await loadData();
-    await ({ dashboard: renderDashboard, customers: renderCustomers, customer: renderCustomerDetail, readings: renderReadings, bills: renderBills, estimator: renderEstimator,
+    await ({ dashboard: renderDashboard, customers: renderCustomers, customer: renderCustomerDetail, readings: renderReadings, bills: renderBills,
              payments: renderPayments, complaints: renderComplaints, profile: renderProfile })[page]();
   } catch (err) { $("view").innerHTML = `<p>${esc(err.message)}</p>`; }
 }
@@ -227,8 +227,7 @@ async function adminDashboard() {
         ? `<ul class="attn" id="attention-list">${items.map(([n, text, link]) => `<li><span><strong>${n}</strong> ${text}</span>${link}</li>`).join("")}</ul>`
         : '<p class="muted" id="attention-list">Nothing needs attention right now.</p>'}</div>
       <div class="panel"><h3>Recent payments</h3>${recent.length ? `<table class="plain"><tbody id="recent-payments">${recent.map((p) => `<tr>
-          <td>${custLink(p.customer_id, p.customer_name)}<div class="muted small">${p.receipt_no}, ${p.paid_on}</div></td><td class="num">${money(p.amount)}</td></tr>`).join("")}</tbody></table>
-        <div style="margin-top:8px">${goLink("payments", "All payments")}</div>` : '<p class="muted">No payments yet.</p>'}</div>
+          <td>${custLink(p.customer_id, p.customer_name)}<div class="muted small">${p.receipt_no}, ${p.paid_on}</div></td><td class="num">${money(p.amount)}</td></tr>`).join("")}</tbody></table>` : '<p class="muted">No payments yet.</p>'}</div>
     </div>`;
   bindGoLinks();
   bindCustLinks();
@@ -304,7 +303,7 @@ function renderBills() {
     ${notice}<div class="summary" style="margin-top:14px">${summary}</div>
     <div class="toolbar"><label for="bill-filter" style="margin:0">Show</label>
       <select id="bill-filter">${["ALL", "UNPAID", "OVERDUE", "PAID"].map((s) => `<option value="${s}" ${S.billFilter === s ? "selected" : ""}>${s === "ALL" ? "All" : s[0] + s.slice(1).toLowerCase()}</option>`).join("")}</select></div>
-    <div class="table-wrap"><table><thead><tr><th>Bill</th>${admin ? "<th>Customer</th>" : ""}<th>Meter</th><th>Date</th><th class="num">Usage</th><th class="num">Amount</th><th>Due</th><th>Status</th><th></th></tr></thead>
+    <div class="table-wrap"><table><thead><tr><th>Bill</th><th>Meter</th><th>Date</th><th class="num">Usage</th><th class="num">Amount</th><th>Due</th><th>Status</th><th></th></tr></thead>
       <tbody id="bill-rows">${rows || emptyRow(admin ? 9 : 8, "No bills to show.")}</tbody></table></div>`;
   $("bill-filter").onchange = (e) => { S.billFilter = e.target.value; renderBills(); };
   document.querySelectorAll(".pay-btn").forEach((b) => (b.onclick = () => openPay(+b.dataset.id)));
@@ -341,29 +340,6 @@ $("confirm-ok").onclick = async () => {
     go(S.page);
   } catch (err) { toast(err.message, "err"); }
 };
-
-/* ---------------- estimator (customer) ---------------- */
-function renderEstimator() {
-  $("view").innerHTML = `<h2>Estimate a bill</h2>
-    <div class="form-box" style="margin-top:14px">
-      <div class="row2"><div><label for="c-units">Water used (kL)</label><input id="c-units" type="number" min="0" step="0.01" placeholder="e.g. 25"></div>
-      <div><label for="c-type">Connection type</label><select id="c-type"><option value="DOMESTIC">Domestic</option><option value="COMMERCIAL">Commercial</option></select></div></div>
-      <button id="calc-btn" class="btn primary" style="margin-top:16px" type="button">Calculate</button>
-      <div id="calc-out" class="calc-result" role="status"></div></div>
-    <h3>Tariff</h3>
-    <div class="table-wrap" style="max-width:560px"><table><thead><tr><th>Monthly usage</th><th class="num">Rate per kL</th></tr></thead><tbody>
-      <tr><td>First 10 kL</td><td class="num">${money(5)}</td></tr><tr><td>10 - 20 kL</td><td class="num">${money(8)}</td></tr>
-      <tr><td>20 - 30 kL</td><td class="num">${money(12)}</td></tr><tr><td>Above 30 kL</td><td class="num">${money(20)}</td></tr></tbody></table></div>
-    <p class="muted" style="max-width:560px">Commercial water charge is 1.5 times the domestic charge. Fixed monthly charge: ${money(50)} domestic, ${money(150)} commercial. Paying after the due date adds ${money(25)} plus 2% of the bill.</p>`;
-  $("calc-btn").onclick = async () => {
-    const out = $("calc-out");
-    try {
-      const d = await api(`/tariff/calculate?units=${encodeURIComponent($("c-units").value)}&type=${$("c-type").value}`);
-      out.className = "calc-result";
-      out.innerHTML = `Water charge ${money(d.water_charge)} + fixed charge ${money(d.fixed_charge)}<br><strong style="font-size:18px">Total: ${money(d.total)}</strong>`;
-    } catch (err) { out.className = "calc-result err"; out.textContent = err.message; }
-  };
-}
 
 /* ---------------- admin: customers ---------------- */
 function customerRows() {
@@ -566,21 +542,20 @@ const METHODS = { UPI: "UPI", CARD: "Card", NETBANKING: "Net banking", CASH: "Ca
 let PAYMENTS = [];
 
 async function renderPayments() {
-  const admin = S.role === "ADMIN";
   PAYMENTS = await api("/payments");
   const total = round2(PAYMENTS.reduce((s, p) => s + p.amount, 0));
   const fees = round2(PAYMENTS.reduce((s, p) => s + p.late_fee, 0));
   const rows = PAYMENTS.map((p) => `<tr>
-      <td>${p.receipt_no}</td><td>${p.paid_on}</td><td>#${p.bill_id}</td>${admin ? `<td>${custLink(p.customer_id, p.customer_name)}</td>` : ""}
+      <td>${p.receipt_no}</td><td>${p.paid_on}</td><td>#${p.bill_id}</td>
       <td>${esc(p.meter_no)}</td><td>${METHODS[p.method] || p.method}</td>
       <td class="num">${money(p.late_fee)}</td><td class="num">${money(p.amount)}</td>
       <td><button class="btn small receipt-btn" data-id="${p.id}" type="button">Receipt</button></td></tr>`).join("");
   $("view").innerHTML = `<h2>Payments</h2>
     <div class="summary" style="margin-top:14px"><div><span class="k">Payments</span><span class="v">${PAYMENTS.length}</span></div>
-      <div><span class="k">${admin ? "Total collected" : "Total paid"}</span><span class="v">${money(total)}</span></div>
+      <div><span class="k">Total paid</span><span class="v">${money(total)}</span></div>
       <div><span class="k">Late fees</span><span class="v">${money(fees)}</span></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Receipt</th><th>Date</th><th>Bill</th>${admin ? "<th>Customer</th>" : ""}<th>Meter</th><th>Method</th><th class="num">Late fee</th><th class="num">Amount</th><th></th></tr></thead>
-      <tbody id="pay-rows">${rows || emptyRow(admin ? 9 : 8, "No payments yet.")}</tbody></table></div>`;
+    <div class="table-wrap"><table><thead><tr><th>Receipt</th><th>Date</th><th>Bill</th><th>Meter</th><th>Method</th><th class="num">Late fee</th><th class="num">Amount</th><th></th></tr></thead>
+      <tbody id="pay-rows">${rows || emptyRow(8, "No payments yet.")}</tbody></table></div>`;
   document.querySelectorAll(".receipt-btn").forEach((b) => (b.onclick = () => openReceipt(+b.dataset.id)));
   bindCustLinks();
 }

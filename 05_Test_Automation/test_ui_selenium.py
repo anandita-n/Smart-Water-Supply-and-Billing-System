@@ -117,22 +117,18 @@ def login_as_customer(d, base_url, username="tester"):
     wait_visible(d, "app")
 
 
-def test_TC_UI02_bill_estimator(driver, base_url):
-    login_as_customer(driver, base_url)
-    open_page(driver, "estimator")
-    fill(driver, "c-units", 25)
-    driver.find_element(By.ID, "calc-btn").click()
-    assert "Total: \u20b9240.00" in text_of(driver, "calc-out", "Total")
-    shot(driver, "UI02_bill_estimator")
+def test_TC_UI02_admin_menu_has_no_payments_tab_but_dashboard_lists_payments(driver):
+    login_as_admin(driver)
+    assert driver.find_elements(By.ID, "nav-payments") == []
+    assert "Recent payments" in driver.find_element(By.ID, "view").text
+    shot(driver, "UI02_admin_menu_five_tabs")
 
 
-def test_TC_UI03_estimator_negative_units_rejected(driver, base_url):
+def test_TC_UI03_customer_menu_has_no_estimate_tab(driver, base_url):
     login_as_customer(driver, base_url)
-    open_page(driver, "estimator")
-    fill(driver, "c-units", -5)
-    driver.find_element(By.ID, "calc-btn").click()
-    assert "greater than or equal to 0" in text_of(driver, "calc-out", "greater")
-    shot(driver, "UI03_negative_units")
+    assert driver.find_elements(By.ID, "nav-estimator") == []
+    assert driver.find_element(By.ID, "nav-payments")
+    shot(driver, "UI03_customer_menu_four_tabs")
 
 
 def test_TC_UI04_admin_login_shows_admin_menu(driver):
@@ -140,7 +136,7 @@ def test_TC_UI04_admin_login_shows_admin_menu(driver):
     assert driver.find_element(By.ID, "who").text == "System Administrator"
     assert driver.find_element(By.ID, "role-label").text.lower() == "admin"
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert [m.title() for m in menu] == ["Dashboard", "Customers", "Readings", "Bills", "Payments", "Feedback"]
+    assert [m.title() for m in menu] == ["Dashboard", "Customers", "Readings", "Bills", "Feedback"]
     shot(driver, "UI04_admin_customers")
 
 
@@ -228,7 +224,7 @@ def test_TC_UI07_customer_does_not_see_admin_menu(driver, base_url):
     assert driver.find_elements(By.ID, "nav-customers") == []
     assert driver.find_elements(By.ID, "nav-readings") == []
     menu = [b.text for b in driver.find_elements(By.CSS_SELECTOR, "#nav .nav-item")]
-    assert [m.capitalize() for m in menu] == ["Dashboard", "My bills", "Payments", "Feedback", "Estimate"]
+    assert [m.capitalize() for m in menu] == ["Dashboard", "My bills", "Payments", "Feedback"]
     shot(driver, "UI07_customer_menu")
 
 
@@ -391,7 +387,7 @@ def test_TC_UI14_customers_can_be_filtered_by_connection_type(driver, base_url):
 
 def test_TC_UI15_pages_have_no_caption_under_the_heading(driver, base_url):
     login_as_admin(driver)
-    for page in ("dashboard", "customers", "readings", "bills", "payments", "complaints"):
+    for page in ("dashboard", "customers", "readings", "bills", "complaints"):
         driver.find_element(By.ID, "nav-" + page).click()
         time.sleep(0.8)
         assert driver.find_elements(By.CSS_SELECTOR, ".lead") == [], page

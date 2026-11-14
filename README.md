@@ -78,7 +78,7 @@ python -m app.seed
 ```
 Customers: `anandita`, `vivan`, `rohan`, `priya`, `karthik`, `meera`, all with the password `water123`.
 The data has paid, unpaid and overdue bills, a late payment with a fee, a high-usage alert (karthik) and complaints in each state.
-Sign in as dmin to see Payments and Complaints from the staff side, or as a customer to see the customer side.
+Sign in as admin to see the staff side (Customers, Readings, Bills, Feedback), or as a customer to see the customer side.
 After 5 wrong passwords an account is locked for 15 minutes.
 
 ## Run the tests
@@ -97,7 +97,7 @@ app/                     Application source (FastAPI backend + static UI)
 03_Test_Execution/       Execution log (run 1 vs run 2)
 04_Defect_Reports/       DEF-001 to DEF-005 with a summary table
 05_Test_Automation/      pytest unit/API tests and Selenium UI tests
-06_Test_Reports/         JUnit XML for 14 runs, coverage output, test summary report
+06_Test_Reports/         JUnit XML for 15 runs, coverage output, test summary report
 07_Screenshots/          Selenium screenshots
 Conclusion.md
 ```
