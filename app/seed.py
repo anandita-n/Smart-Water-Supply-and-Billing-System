@@ -35,7 +35,8 @@ def first_of_month(d: date, back: int) -> date:
 
 def main():
     today = date.today()
-    months = [first_of_month(today, n) for n in (3, 2, 1, 0)]      # 4 reading dates -> 3 bills each
+    months = [first_of_month(today, n) for n in (3, 2, 1)] + [today - timedelta(days=2)]   # 4 reading dates -> 3 bills each
+    # the newest reading is 2 days ago, so the newest bills are always still inside their 15-day due window (UNPAID, not OVERDUE)
     with TestClient(app) as c:
         admin = {"Authorization": "Bearer " + c.post("/api/auth/login", json={"username": "admin", "password": "admin123"}).json()["token"]}
         existing = {u["username"] for u in c.get("/api/customers", headers=admin).json()}

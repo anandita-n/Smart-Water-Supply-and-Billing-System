@@ -16,7 +16,7 @@ def test_TC_A61_seed_loads_six_customers_including_team_members(client):
     with get_conn() as c:
         assert c.execute("SELECT COUNT(*) n FROM bills").fetchone()["n"] == 18
         statuses = {r["status"] for r in c.execute("SELECT status FROM bills")}
-        assert {"PAID", "UNPAID"} <= statuses                      # a realistic mix
+        assert {"PAID", "UNPAID", "OVERDUE"} <= statuses            # a realistic mix, whatever day of the month it is run
         assert c.execute("SELECT COUNT(*) n FROM alerts").fetchone()["n"] == 1   # Karthik's spike
 
 

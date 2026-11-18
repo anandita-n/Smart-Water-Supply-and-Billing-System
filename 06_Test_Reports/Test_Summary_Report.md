@@ -22,12 +22,13 @@
 | Run 12 | Renamed to HydroCore, login page with light-blue wave, greeting band and charts on the dashboards; UI tests TC-UI21 and TC-UI22 | 175 | 175 | 0 |
 | Run 13 | Single light-blue wave on the sign-in page, new HydroCore logo; TC-UI21 extended | 175 | 175 | 0 |
 | Run 14 | boxed figure strips replaced by a statement-style balance and plain rows; all screenshots regenerated with the HydroCore name | 175 | 175 | 0 |
-| Run 15 | Final: photo sign-in panel, original font restored, Feedback feed; admin Payments tab and customer Estimate tab removed (TC-UI02 and TC-UI03 replaced) | 175 | 175 | 0 |
+| Run 15 | photo sign-in panel, original font restored, Feedback feed; admin Payments tab and customer Estimate tab removed (TC-UI02 and TC-UI03 replaced) | 175 | 175 | 0 |
+| Run 16 | Final: seed data and TC-A61 made independent of the day of the month (the test failed once current-month bills passed their due date) | 175 | 175 | 0 |
 
-Raw results: `run1_baseline.xml` to `run15_final.xml` (JUnit XML) and the `*_summary.txt` files.
+Raw results: `run1_baseline.xml` to `run16_final.xml` (JUnit XML) and the `*_summary.txt` files.
 Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
-### Final test inventory (run 15)
+### Final test inventory (run 16)
 | Level | Technique(s) | Test cases |
 |---|---|---|
 | Unit (`test_billing_unit.py`, `test_complaints.py`) | BVA, equivalence partitioning, decision table, state transition | 36 |
@@ -37,7 +38,7 @@ Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
 Parameterised tests are counted per parameter set, because each set has its own test case ID.
 
-## 2. Code coverage (pytest-cov, run 15)
+## 2. Code coverage (pytest-cov, run 16)
 | File | Statements | Missed | Coverage |
 |---|---|---|---|
 | app/billing.py | 48 | 0 | 100% |
