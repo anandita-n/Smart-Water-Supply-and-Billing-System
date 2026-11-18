@@ -177,3 +177,69 @@ TC-A50 (calculator), TC-A58 and TC-A59 (admin-only customer list), TC-A114 to TC
 | TC-UI20 | Admin opens Readings for a meter that is already billed: Generate bill is disabled with the reason "Add a new reading first"; adds a reading with Save and generate bill | A bill is generated in one step; the meter shows as billed again and the bill appears under Bills |
 | TC-UI21 | Open the sign-in page, then sign in as admin | Page title and card show HydroCore, the photo panel with the HydroCore logo mark is displayed beside a labelled Username field; after sign-in the top bar shows HydroCore; the old name appears nowhere |
 | TC-UI22 | Admin and then a customer with one bill open their dashboards | Greeting band shown; admin chart has 12 bars (6 months x billed and collected); customer chart has 1 bar |
+
+## 14. White-box test design (TC-W01 to TC-W25)
+Black-box techniques (sections 1 to 13) choose tests from the requirements. White-box testing chooses them
+from the code itself. Two white-box techniques were used:
+
+1. **Basis path testing** on the decision-heavy functions of `app/billing.py` and `app/complaints.py`.
+2. **Branch (decision) coverage** of the whole `app` package, measured with `pytest --cov --cov-branch`. The coverage
+   report after the black-box suite showed which statements and branches no test had reached, and a test was then
+   written for each of them.
+
+### 14.1 Basis path testing
+Cyclomatic complexity V(G) = number of decision points + 1. It equals the number of independent paths, so it is
+the minimum number of tests needed to run every path once.
+
+**`water_charge(units, connection_type)`: V(G) = 7**
+Decisions: `units < 0`; `type not in table`; the `for` loop; `remaining <= 0` (break); `width is None`;
+`type == COMMERCIAL`.
+```
+ start -> [units<0?]--yes--> raise                      (path 1)
+            | no
+          [bad type?]--yes--> raise                     (path 2)
+            | no
+          loop over slabs: [remaining<=0?]--yes--> break
+            | no                                  |
+          [width is None?] -> add charge          |
+            |                                     v
+          (next slab)  ...  ---------------> [COMMERCIAL?] -> x1.5 -> round -> return
+```
+| Path | Route through the code | Test | Input | Expected |
+|---|---|---|---|---|
+| 1 | `units < 0` true | TC-W01 | -1 | ValueError |
+| 2 | type check true | TC-W02 | 5, INDUSTRIAL | ValueError |
+| 3 | loop leaves on the first pass | TC-W03 | 0 | 0.00 |
+| 4 | one slab used, break on the second pass | TC-W04 | 5 | 25.00 |
+| 5 | three slabs used, break on the fourth pass | TC-W05 | 30 | 250.00 |
+| 6 | `width is None` branch, loop ends normally | TC-W06 | 50 | 650.00 |
+| 7 | COMMERCIAL branch true | TC-W07 | 20, COMMERCIAL | 195.00 |
+
+**`is_leak_suspected(units, previous_units)`: V(G) = 5**
+Decisions: `units > 100`; `previous_units` not empty; `avg > 0`; `units > 3 x avg`.
+| Path | Route | Test | Input | Expected |
+|---|---|---|---|---|
+| 1 | high usage, early return | TC-W08 | 150, no history | True |
+| 2 | no history | TC-W09 | 50, no history | False |
+| 3 | history with average 0 (spike check skipped) | TC-W10 | 5, [0, 0] | False |
+| 4 | history, but no spike | TC-W11 | 20, [10, 10] | False |
+| 5 | spike over 3 x average | TC-W12 | 31, [10, 10] | True |
+
+**Smaller functions**
+| Function | V(G) | Paths and tests |
+|---|---|---|
+| `late_fee` | 2 | on time (TC-W13), late (TC-W14) |
+| `billing.next_status` | 2 | transition found (TC-W15), missing transition raises (TC-W16) |
+| `complaints.next_status` | 2 | valid then invalid transition (TC-W17) |
+| `complaints.allowed_next` | 3 | loop entry matches, loop entry skipped, empty result (TC-W18) |
+
+### 14.2 Branch coverage
+| Step | Result |
+|---|---|
+| Black-box suite only (153 non-UI tests, `--cov-branch`) | 96% total; `db.py` 78%; 12 statements and 11 branches not reached |
+| Gaps found in `main.py` | admin branch of `list_connections` (TC-W19) and of `list_alerts` (TC-W20); a customer opening another customer's bill (TC-W21); a complaint about an unknown connection (TC-W22); the home page route (TC-W23); the success path of `get_bill` (TC-W25) |
+| Gap found in `db.py` | the migration of databases created before token expiry, lock-out and payments existed (TC-W24 builds an old-style database and checks that `init_db()` upgrades it and back-fills the payment) |
+| After the white-box tests | `billing.py`, `complaints.py`, `db.py` and `main.py` at 100% of statements and branches; the total is 99% (see the Test Summary Report) |
+
+Statement coverage alone can hide untested decisions, which is why branch coverage was switched on.
+

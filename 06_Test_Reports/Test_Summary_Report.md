@@ -23,32 +23,36 @@
 | Run 13 | Single light-blue wave on the sign-in page, new HydroCore logo; TC-UI21 extended | 175 | 175 | 0 |
 | Run 14 | boxed figure strips replaced by a statement-style balance and plain rows; all screenshots regenerated with the HydroCore name | 175 | 175 | 0 |
 | Run 15 | photo sign-in panel, original font restored, Feedback feed; admin Payments tab and customer Estimate tab removed (TC-UI02 and TC-UI03 replaced) | 175 | 175 | 0 |
-| Run 16 | Final: seed data and TC-A61 made independent of the day of the month (the test failed once current-month bills passed their due date) | 175 | 175 | 0 |
+| Run 16 | Seed data and TC-A61 made independent of the day of the month (the test failed once current-month bills passed their due date) | 175 | 175 | 0 |
+| Run 17 | Final: white-box testing added (basis path tests and branch-coverage tests TC-W01 to TC-W25) | 200 | 200 | 0 |
 
-Raw results: `run1_baseline.xml` to `run16_final.xml` (JUnit XML) and the `*_summary.txt` files.
+Raw results: `run1_baseline.xml` to `run17_final.xml` (JUnit XML) and the `*_summary.txt` files.
 Per-test results across all runs: `03_Test_Execution/test_execution_log.md`.
 
-### Final test inventory (run 16)
+### Final test inventory (run 17)
 | Level | Technique(s) | Test cases |
 |---|---|---|
-| Unit (`test_billing_unit.py`, `test_complaints.py`) | BVA, equivalence partitioning, decision table, state transition | 36 |
-| API (`test_api.py`, `test_payments.py`, `test_account_security.py`, `test_complaints.py`, `test_seed.py`) | Equivalence partitioning, BVA, RBAC, decision table, state transition, error guessing | 117 |
+| Unit (`test_billing_unit.py`, `test_complaints.py`, `test_whitebox.py` TC-W01 to W18) | Black box: BVA, equivalence partitioning, decision table, state transition. White box: basis path testing | 54 |
+| API (`test_api.py`, `test_payments.py`, `test_account_security.py`, `test_complaints.py`, `test_seed.py`, `test_whitebox.py` TC-W19 to W25) | Black box: equivalence partitioning, BVA, RBAC, decision table, state transition, error guessing. White box: branch coverage | 124 |
 | UI (`test_ui_selenium.py`) | Scenario-based, end to end | 22 |
-| **Total** | | **175** |
+| **Total** | | **200** |
 
 Parameterised tests are counted per parameter set, because each set has its own test case ID.
 
-## 2. Code coverage (pytest-cov, run 16)
-| File | Statements | Missed | Coverage |
-|---|---|---|---|
-| app/billing.py | 48 | 0 | 100% |
-| app/complaints.py | 9 | 0 | 100% |
-| app/db.py | 21 | 3 | 86% |
-| app/main.py | 328 | 2 | 99% |
-| app/seed.py | 63 | 4 | 94% |
-| **Total** | 469 | 9 | **98%** (exit criterion: at least 90%) |
+## 2. Code coverage (pytest-cov with branch coverage, run 17)
+| File | Statements | Missed | Branches | Partly covered | Coverage |
+|---|---|---|---|---|---|
+| app/billing.py | 48 | 0 | 20 | 0 | 100% |
+| app/complaints.py | 9 | 0 | 2 | 0 | 100% |
+| app/db.py | 21 | 0 | 6 | 0 | 100% |
+| app/main.py | 328 | 0 | 84 | 0 | 100% |
+| app/seed.py | 63 | 4 | 26 | 4 | 91% |
+| **Total** | 469 | 4 | 138 | 4 | **99%** (exit criterion: at least 90%) |
 
-The uncovered lines in `db.py` are the migration steps for databases created before a feature existed; the tests always start from an empty database.
+Before the white-box tests (runs 1 to 16) the figure was 98% statement coverage. With branch coverage switched on
+and the black-box tests only, the total was 96% and `db.py` was at 78%; the white-box tests TC-W19 to TC-W25 closed
+those gaps. The remaining 4 lines in `seed.py` are date-dependent branches of the demo-data loader (a year wrap-around
+and some complaint-seeding branches that only run in particular states).
 
 ## 3. Defects
 | ID | Title | Severity | Found by | Status |
@@ -67,7 +71,7 @@ Details are in `04_Defect_Reports/`. The new modules (payments, lock-out, compla
 | All planned test cases executed | Yes |
 | No open Critical/High defects | Yes (4 Medium and 1 Low defect found, all closed) |
 | Fixed defects retested | Yes (runs 2, 4 and 8) |
-| Coverage of `app` at least 90% | Yes (98%) |
+| Coverage of `app` at least 90% | Yes (99%, statements and branches) |
 
 ## 5. Known risks and recommendations
 - The UI was tested in Edge only. During run 5 one UI test failed intermittently because the page re-rendered while the test was selecting a dropdown option (a test timing problem, not an application defect). The test now waits and retries, and the UI suite passed repeatedly afterwards.

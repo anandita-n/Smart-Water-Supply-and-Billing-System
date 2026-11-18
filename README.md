@@ -60,9 +60,10 @@ A water utility system with:
 More are in `07_Screenshots/`.
 
 ## Results at a glance
-- **175 automated test cases** (36 unit, 117 API, 22 Selenium UI): 87 of 89 passed on run 1; all 175 pass on the final run
+- **200 automated test cases** (54 unit, 124 API, 22 Selenium UI): 87 of 89 passed on run 1; all 200 pass on the final run
+- **Black-box and white-box testing:** equivalence partitioning, BVA, decision tables, state transition and error guessing (black box); basis path testing and branch coverage (white box, TC-W01 to TC-W25)
 - **5 defects** found by the tests, all fixed and retested (see `04_Defect_Reports/README.md`)
-- **98%** statement coverage of the `app` package
+- **99%** statement and branch coverage of the `app` package (`pytest --cov=app --cov-branch`)
 
 ## Run the application
 ```bash
@@ -97,7 +98,7 @@ app/                     Application source (FastAPI backend + static UI)
 03_Test_Execution/       Execution log (run 1 vs run 2)
 04_Defect_Reports/       DEF-001 to DEF-005 with a summary table
 05_Test_Automation/      pytest unit/API tests and Selenium UI tests
-06_Test_Reports/         JUnit XML for 16 runs, coverage output, test summary report
+06_Test_Reports/         JUnit XML for 17 runs, coverage output, test summary report
 07_Screenshots/          Selenium screenshots
 Conclusion.md
 ```

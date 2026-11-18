@@ -49,12 +49,14 @@ browsers other than Microsoft Edge.
 | Decision table | Leak / high-usage alert, payment acceptance |
 | State transition | Bill lifecycle UNPAID / OVERDUE / PAID |
 | Error guessing | `inf` / `nan` values, future dates, token misuse |
-| Automation | pytest (unit + API), Selenium WebDriver (UI), pytest-cov (coverage) |
+| White-box: basis path testing | `water_charge`, `is_leak_suspected`, `late_fee`, state-transition functions (cyclomatic complexity worked out per function) |
+| White-box: branch coverage | Whole `app` package, measured with `pytest --cov --cov-branch`; untested branches in `main.py` and `db.py` closed with extra tests |
+| Automation | pytest (unit + API), Selenium WebDriver (UI), pytest-cov (statement and branch coverage) |
 
 ## 5. Entry and exit criteria
 - **Entry:** application starts, database initialises, admin account is seeded.
 - **Exit:** all planned test cases executed; no open Critical/High defects; every fixed defect retested;
-  statement coverage of the `app` package at least 90%.
+  statement and branch coverage of the `app` package at least 90%.
 
 ## 6. Test environment
 Windows 11, Python 3.11, FastAPI 0.136, SQLite (fresh database per test), pytest 9, Selenium with Microsoft Edge (headless).
