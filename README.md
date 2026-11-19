@@ -5,8 +5,8 @@ Software Testing portfolio (Other Component), with the application under test an
 ## Student details
 | Name | USN |
 |---|---|
-| S Anandita Narayan | 1MS23IS105 |
-| Vivan Raj Belur | 1MS23IS152 |
+|  S Anandita Narayan  |  1MS23IS105  |
+|  Vivan Raj Belur  |  1MS23IS152  |
 
 **Subject:** Software Testing
 
