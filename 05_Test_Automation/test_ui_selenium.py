@@ -44,7 +44,8 @@ def base_url(tmp_path_factory):
 @pytest.fixture()
 def driver(base_url):
     opts = Options()
-    opts.add_argument("--headless=new")
+    if os.environ.get("SHOW_BROWSER") != "1":            # set SHOW_BROWSER=1 to watch the robot browser work
+        opts.add_argument("--headless=new")
     opts.add_argument("--window-size=1100,900")
     d = webdriver.Edge(options=opts)
     d.implicitly_wait(2)
